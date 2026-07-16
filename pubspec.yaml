@@ -5,8 +5,8 @@ description: Type-safe, cross-platform media handling for files, memory, asset,
   and network sources with automatic type detection, seamless conversions, and
   Flutter integration.
 
-repository: https://github.com/balsm-io/media_source
-homepage: https://github.com/balsm-io/media_source
+repository: https://github.com/balsm-health/media_source
+homepage: https://github.com/balsm-health/media_source
 
 topics:
   - media

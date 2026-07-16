@@ -46,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Save/move/convert logic is now implemented once in the base classes
   (`FileMediaSource`, `MemoryMediaSource`, `AssetMediaSource`) via template hooks, removing
   drift between the per-type implementations
+- Repository moved to the balsm-health organization:
+  <https://github.com/balsm-health/media_source>
 
 ### Deprecated
 - `MediaSource.isAnyType`: exact `runtimeType` comparison silently fails for base types; use
@@ -346,10 +348,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔗 Built on `cross_file` for cross-platform file handling
 - ⚡ Lightweight with minimal dependencies
 
-[1.3.2]: https://github.com/balsm-io/media_source/releases/tag/v1.3.2
-[1.3.1]: https://github.com/balsm-io/media_source/releases/tag/v1.3.1
-[1.3.0]: https://github.com/balsm-io/media_source/releases/tag/v1.3.0
-[1.2.0]: https://github.com/balsm-io/media_source/releases/tag/v1.2.0
-[1.1.0]: https://github.com/balsm-io/media_source/releases/tag/v1.1.0
-[1.0.0]: https://github.com/balsm-io/media_source/releases/tag/v1.0.0
+[1.3.2]: https://github.com/balsm-health/media_source/releases/tag/v1.3.2
+[1.3.1]: https://github.com/balsm-health/media_source/releases/tag/v1.3.1
+[1.3.0]: https://github.com/balsm-health/media_source/releases/tag/v1.3.0
+[1.2.0]: https://github.com/balsm-health/media_source/releases/tag/v1.2.0
+[1.1.0]: https://github.com/balsm-health/media_source/releases/tag/v1.1.0
+[1.0.0]: https://github.com/balsm-health/media_source/releases/tag/v1.0.0
 

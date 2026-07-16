@@ -1,4 +1,4 @@
-<img src="https://github.com/balsm-io/media_source/raw/main/assets/wallpaper.png" alt="wallpaper" />
+<img src="https://github.com/balsm-health/media_source/raw/main/assets/wallpaper.png" alt="wallpaper" />
 
 
 <h2 align="center">
@@ -6,12 +6,12 @@
 </h2>
 
 <p align="center">
-   <a href="https://github.com/balsm-io/media_source/actions/workflows/build.yml">
-    <img src="https://github.com/balsm-io/media_source/actions/workflows/build.yml/badge.svg?branch=main" alt="GitHub action">
+   <a href="https://github.com/balsm-health/media_source/actions/workflows/build.yml">
+    <img src="https://github.com/balsm-health/media_source/actions/workflows/build.yml/badge.svg?branch=main" alt="GitHub action">
   </a>
 
-  <a href="https://codecov.io/gh/balsm-io/media_source" > 
- <img src="https://codecov.io/gh/balsm-io/media_source/graph/badge.svg?token=sSK2ZySczS"/> 
+  <a href="https://codecov.io/gh/balsm-health/media_source" > 
+ <img src="https://codecov.io/gh/balsm-health/media_source/graph/badge.svg?token=sSK2ZySczS"/> 
  </a>
   <a href="https://pub.dev/packages/media_source">
     <img alt="Pub Package" src="https://img.shields.io/pub/v/media_source">
@@ -860,7 +860,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### Issues
 
-If you encounter any issues or have suggestions, please file them in the [issue tracker](https://github.com/balsm-io/media_source/issues).
+If you encounter any issues or have suggestions, please file them in the [issue tracker](https://github.com/balsm-health/media_source/issues).
 
 ### License
 
