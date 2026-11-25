@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   The runtime object is unchanged; only explicitly-typed assignments need updating. The typed
   metadata survives via the generic (`FileMediaSource<VideoType>.metadata.duration` still works)
 - `FileMediaSource.moveTo` uses a fast platform rename when possible instead of copy + delete
+- On web, `saveTo` and `moveTo` return a source backed by the original blob instead of a
+  pointer to the download path, which a browser cannot read back. `moveTo` no longer
+  revokes the original on web. See "Web notes" in the README
 - `NetworkMediaSource.fromUrlOrNull` now forwards `name`, `size`, `mimeType`, `duration`, and
   `mediaType` to `fromUrl`, and only swallows `FormatException`
 - Save/move/convert logic is now implemented once in the base classes
