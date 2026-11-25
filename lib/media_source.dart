@@ -100,6 +100,7 @@
 ///   memory: (m) => 'Memory: ${m.size}',
 ///   network: (n) => 'URL: ${n.uri}',
 ///   asset: (a) => 'Asset: ${a.assetPath}',
+///   thumbnail: (t) => 'Thumbnail of ${t.original.name}',
 ///   orElse: () => 'Unknown',
 /// );
 /// ```

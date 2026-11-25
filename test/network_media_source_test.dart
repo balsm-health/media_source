@@ -391,6 +391,7 @@ void main() {
 
         expect(urlMedia.uri.toString(), 'https://example.com/file.dat');
         expect(urlMedia.size, isNull);
+        // '.dat' has no known MIME type, so detection from the path yields null.
         expect(urlMedia.mimeType, isNull);
         expect(urlMedia.metadata, isA<UrlType>());
       });
