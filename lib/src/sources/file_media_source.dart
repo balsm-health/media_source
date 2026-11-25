@@ -109,13 +109,9 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
     // Web-only branch, unreachable in VM tests.
     if (kIsWeb) return saved; // coverage:ignore-line
     final deleted = await delete();
-    // Defensive: requires the copy to succeed while deleting the original
-    // fails, which needs fault injection to reproduce.
-    // coverage:ignore-start
     if (!deleted) {
       throw StateError('moveTo: copied "${file.path}" to "$path" but failed to delete the original file.');
     }
-    // coverage:ignore-end
     return saved;
   }
 

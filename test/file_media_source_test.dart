@@ -2,6 +2,8 @@
 // Reads fixtures from disk via XFile paths, which a browser can't address.
 library;
 
+import 'dart:io';
+
 import 'package:media_source/src/sources/file_media_source.dart';
 import 'package:media_source/src/sources/memory_media_source.dart';
 import 'package:media_source/src/extensions/file_extensions.dart';
@@ -586,6 +588,21 @@ void main() {
       expect(await moved.file.exists(), isTrue);
       expect(await moved.file.size(), video.size);
     });
+
+    // Read-only source dir: rename fails (can't unlink from it), the copy
+    // fallback succeeds, and deleting the original fails.
+    test('should throw StateError when the original cannot be deleted after copying', () async {
+      final asset = Fixture.sample_video;
+      final video = await VideoFileMedia.fromPath(asset.file.path);
+      final lockedDir = Directory('$tempDir/locked');
+      final source = await video.saveTo('${lockedDir.path}/source.mp4');
+      await Process.run('chmod', ['555', lockedDir.path]);
+      addTearDown(() => Process.run('chmod', ['755', lockedDir.path]));
+
+      await expectLater(source.moveTo('$tempDir/out/moved.mp4'), throwsStateError);
+      expect(await source.file.exists(), isTrue);
+      expect(await File('$tempDir/out/moved.mp4').exists(), isTrue);
+    }, skip: Platform.isWindows ? 'POSIX permissions only' : false);
 
     test('should replace an existing file at the target', () async {
       final asset = Fixture.sample_video;
