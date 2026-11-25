@@ -457,12 +457,7 @@ class MediaFactory {
     return _createNetworkMedia(url: url, name: name, size: size, duration: duration);
   }
 
-  Future<MediaSource?> _createFileMedia({
-    required String path,
-    String? name,
-    Duration? duration,
-    FileSize? size,
-  }) async {
+  Future<MediaSource?> _createFileMedia({required String path, String? name, Duration? duration, FileSize? size}) {
     final fileType = FileType.fromPath(path);
 
     if (fileType is! FileTypeImpl) {
@@ -548,12 +543,7 @@ class SmartMediaFactory {
     return await _createFileMedia(path: path, size: size, duration: duration);
   }
 
-  Future<MediaSource?> _createFileMedia({
-    required String path,
-    String? name,
-    Duration? duration,
-    FileSize? size,
-  }) async {
+  Future<MediaSource?> _createFileMedia({required String path, String? name, Duration? duration, FileSize? size}) {
     final fileType = FileType.fromPath(path);
 
     if (fileType is! FileTypeImpl) {
