@@ -11,3 +11,10 @@ coverage/
 *.iml
 .idea/
 .vscode/
+.fvm/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.log
+# Never publish local secrets.
+.env
+.env.*
