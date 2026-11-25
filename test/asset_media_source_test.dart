@@ -1,3 +1,7 @@
+@TestOn('vm')
+// Reads fixtures from disk via XFile paths, which a browser can't address.
+library;
+
 import 'package:media_source/src/sources/asset_media_source.dart';
 import 'package:media_source/src/sources/file_media_source.dart';
 import 'package:media_source/src/sources/memory_media_source.dart';

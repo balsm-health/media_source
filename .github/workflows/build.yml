@@ -53,6 +53,12 @@ jobs:
       - name: Run tests
         run: flutter test --coverage
 
+      # Disk-fixture suites are tagged @TestOn('vm'); this covers the web
+      # branches (blob-backed saveTo/moveTo) that VM coverage can't reach.
+      - name: Run web tests
+        if: ${{ matrix.coverage }}
+        run: flutter test --platform chrome
+
       - name: Codecov
         if: ${{ matrix.coverage }}
         # You may pin to the exact commit or the version.
