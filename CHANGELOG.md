@@ -34,7 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with the body cancelled unread, other URLs use `HEAD`. The HTTP response is authoritative:
   a revoked blob URL or a 404 now reports `false` (previously the cached bytes, or the 404
   page body, made it look alive). An `XFile(path, bytes: ...)` with a non-addressable path now
-  reports `false`; use `XFile.fromData` for in-memory data
+  reports `false`; use `XFile.fromData` for in-memory data. Servers that reject `HEAD`
+  (403/405/501, e.g. S3/GCS presigned URLs) get a one-byte ranged `GET` instead, and each
+  request times out after 10 seconds rather than hanging
 - `FileMediaSource.moveTo` no longer pre-deletes an existing target. Rename and copy already
   replace it, and the pre-delete destroyed the source when the target named the same file under
   a different spelling (e.g. `./a.mp4` vs `a.mp4`)

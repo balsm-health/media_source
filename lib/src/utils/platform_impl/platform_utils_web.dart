@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:js_interop';
 
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:media_source/src/utils/platform_utils.dart';
 import 'package:web/web.dart' as web;
 
@@ -63,14 +65,32 @@ class PlatformUtilsFacadeImpl extends PlatformUtilsFacade {
     return true;
   }
 
+  /// Performs the HTTP requests behind [fileExists]. Replaceable in tests.
+  @visibleForTesting
+  static Future<web.Response> Function(String url, web.RequestInit init) fetch = _windowFetch;
+
+  /// How long one existence request may take before the resource is treated
+  /// as unreachable. Replaceable in tests.
+  @visibleForTesting
+  static Duration fetchTimeout = const Duration(seconds: 10);
+
+  static Future<web.Response> _windowFetch(String url, web.RequestInit init) => web.window.fetch(url.toJS, init).toDart;
+
+  /// HEAD statuses that mean "this server won't answer HEAD", not "missing":
+  /// S3/GCS presigned URLs sign the method (403), and some servers or CDNs
+  /// reject HEAD outright (405/501).
+  static const _headRejectedStatuses = {403, 405, 501};
+
   /// Checks that the [XFile]'s resource is reachable without downloading it.
   ///
   /// `blob:` / `data:` URLs are fetched and the body is cancelled unread
-  /// (blob URLs only support GET); other URLs get a `HEAD` request. An HTTP
-  /// response is authoritative: a revoked blob or a 404 reports `false`, even
-  /// if the [XFile] caches bytes (use `XFile.fromData` for in-memory data).
-  /// Only when the request itself fails (e.g. network or CORS error) does
-  /// this fall back to reading the bytes.
+  /// (blob URLs only support GET); other URLs get a `HEAD` request, retried as
+  /// a one-byte ranged `GET` when the server rejects HEAD (403/405/501). Any
+  /// other HTTP response is authoritative: a revoked blob or a 404 reports
+  /// `false`, even if the [XFile] caches bytes (use `XFile.fromData` for
+  /// in-memory data). Each request times out after [fetchTimeout] and then
+  /// reports `false`. Only when the request itself fails (e.g. network or
+  /// CORS error) does this fall back to reading the bytes.
   @override
   Future<bool> fileExists(XFile xFile) async {
     final path = xFile.path;
@@ -93,11 +113,36 @@ class PlatformUtilsFacadeImpl extends PlatformUtilsFacade {
   Future<bool?> _isReachable(String url) async {
     final inMemory = url.startsWith('blob:') || url.startsWith('data:');
     try {
-      final response = await web.window.fetch(url.toJS, web.RequestInit(method: inMemory ? 'GET' : 'HEAD')).toDart;
-      if (inMemory) await response.body?.cancel().toDart;
-      return response.ok;
+      if (inMemory) return await _probe(url, 'GET');
+      final status = await _status(url, 'HEAD');
+      if (!_headRejectedStatuses.contains(status)) return status >= 200 && status < 300;
+      return await _probe(url, 'GET', rangeFirstByte: true);
+    } on TimeoutException {
+      return false;
     } catch (e) {
       return inMemory ? false : null;
     }
+  }
+
+  /// Sends [method] to [url] and returns the status, cancelling any body.
+  Future<int> _status(String url, String method, {bool rangeFirstByte = false}) async {
+    final controller = web.AbortController();
+    final headers = web.Headers();
+    if (rangeFirstByte) headers.append('Range', 'bytes=0-0');
+    final init = web.RequestInit(method: method, headers: headers, signal: controller.signal);
+    final response = await fetch(url, init).timeout(
+      fetchTimeout,
+      onTimeout: () {
+        controller.abort();
+        throw TimeoutException('fileExists: $method $url timed out', fetchTimeout);
+      },
+    );
+    await response.body?.cancel().toDart;
+    return response.status;
+  }
+
+  Future<bool> _probe(String url, String method, {bool rangeFirstByte = false}) async {
+    final status = await _status(url, method, rangeFirstByte: rangeFirstByte);
+    return status >= 200 && status < 300;
   }
 }

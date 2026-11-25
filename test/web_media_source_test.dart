@@ -1,6 +1,7 @@
 @TestOn('browser')
 library;
 
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
@@ -8,7 +9,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:media_source/src/extensions/file_extensions.dart';
 import 'package:media_source/src/sources/file_media_source.dart';
 import 'package:media_source/src/sources/memory_media_source.dart';
+import 'package:media_source/src/utils/platform_impl/platform_utils_web.dart';
 import 'package:media_source/src/utils/platform_utils.dart';
+import 'package:web/web.dart' as web;
 
 /// Web-only behavior of saveTo / moveTo. On web, `XFile.saveTo` only triggers
 /// a browser download, so the destination path is never addressable and the
@@ -79,6 +82,59 @@ void main() {
     test('is false for a non-addressable path even with cached bytes', () async {
       final file = XFile('not/served/a.bin', bytes: bytes);
       expect(await PlatformUtils.instance.fileExists(file), isFalse);
+    });
+  });
+
+  group('PlatformUtils.fileExists (web) with servers that reject HEAD', () {
+    final originalFetch = PlatformUtilsFacadeImpl.fetch;
+    final requests = <String>[];
+    late List<int> statuses;
+
+    setUp(() {
+      requests.clear();
+      PlatformUtilsFacadeImpl.fetch = (url, init) async {
+        final range = (init.headers as web.Headers?)?.get('Range');
+        requests.add('${init.method}${range == null ? '' : ' $range'}');
+        return web.Response(null, web.ResponseInit(status: statuses.removeAt(0)));
+      };
+    });
+
+    tearDown(() {
+      PlatformUtilsFacadeImpl.fetch = originalFetch;
+      PlatformUtilsFacadeImpl.fetchTimeout = const Duration(seconds: 10);
+    });
+
+    Future<bool> exists() => PlatformUtils.instance.fileExists(XFile('https://cdn.example/a.mp4'));
+
+    for (final rejected in [403, 405, 501]) {
+      test('retries a $rejected HEAD as a one-byte ranged GET', () async {
+        statuses = [rejected, 206];
+        expect(await exists(), isTrue);
+        expect(requests, ['HEAD', 'GET bytes=0-0']);
+      });
+    }
+
+    test('reports false when the ranged GET is also refused', () async {
+      statuses = [403, 403];
+      expect(await exists(), isFalse);
+    });
+
+    test('treats 404 on HEAD as missing without a GET', () async {
+      statuses = [404];
+      expect(await exists(), isFalse);
+      expect(requests, ['HEAD']);
+    });
+
+    test('times out instead of hanging and aborts the request', () async {
+      web.AbortSignal? signal;
+      PlatformUtilsFacadeImpl.fetchTimeout = const Duration(milliseconds: 50);
+      PlatformUtilsFacadeImpl.fetch = (url, init) {
+        signal = init.signal;
+        return Completer<web.Response>().future;
+      };
+
+      expect(await exists(), isFalse);
+      expect(signal!.aborted, isTrue);
     });
   });
 }
