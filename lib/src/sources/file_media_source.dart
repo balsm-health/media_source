@@ -64,10 +64,15 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   /// Creates the directory if it doesn't exist, then saves the file
   /// and returns a new [FileMediaSource] instance pointing to the saved
   /// location. Subclasses narrow the return type via [copyWithFile].
+  ///
+  /// On web, [path] only names the browser download and is not addressable
+  /// afterwards, so the returned source keeps the existing file handle.
   Future<FileMediaSource<M>> saveTo(String path) async {
     await PlatformUtils.instance.ensureParentDirectoryExists(path);
     await file.saveTo(path);
     final newSize = size ?? await file.size();
+    // coverage:ignore-line — web-only branch, unreachable in VM tests
+    if (kIsWeb) return copyWithFile(file, newSize);
     return copyWithFile(
       XFile(path, name: name, mimeType: mimeType, length: newSize.inBytes),
       newSize,
@@ -91,8 +96,8 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   ///
   /// Throws a [StateError] on native platforms when the fallback copy
   /// succeeds but the original file cannot be deleted (both files exist at
-  /// that point). On web the original is left in place silently, since
-  /// deleting arbitrary browser resources is not supported.
+  /// that point). On web the original is left in place, since the returned
+  /// source still reads from it (see [saveTo]).
   ///
   /// Parameters:
   /// - [path]: The destination file path
@@ -109,10 +114,12 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
       return copyWithFile(moved, size ?? await moved.size());
     }
     final saved = await saveTo(path);
+    // coverage:ignore-line — web-only branch, unreachable in VM tests
+    if (kIsWeb) return saved;
     final deleted = await delete();
     // coverage:ignore-start — defensive: requires the copy to succeed while
     // deleting the original fails, which needs fault injection to reproduce.
-    if (!deleted && !kIsWeb) {
+    if (!deleted) {
       throw StateError('moveTo: copied "${file.path}" to "$path" but failed to delete the original file.');
     }
     // coverage:ignore-end

@@ -2,6 +2,7 @@ import 'package:media_source/src/sources/file_media_source.dart';
 import 'package:media_source/src/sources/memory_media_source.dart';
 import 'package:media_source/src/extensions/file_extensions.dart';
 import 'package:media_source/src/utils/platform_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'shared/fixture.dart';
 
@@ -387,7 +388,8 @@ void main() {
       final savedFile = await video.saveTo(newPath);
 
       expect(savedFile, isA<VideoFileMedia>());
-      expect(savedFile.file.path, newPath);
+      // On web saveTo triggers a download and keeps the original handle.
+      expect(savedFile.file.path, kIsWeb ? video.file.path : newPath);
       expect(savedFile.name, video.name);
       expect(savedFile.metadata, video.metadata);
       expect(savedFile.size, video.size);
@@ -402,7 +404,8 @@ void main() {
       final savedFile = await audio.saveTo(newPath);
 
       expect(savedFile, isA<AudioFileMedia>());
-      expect(savedFile.file.path, newPath);
+      // On web saveTo triggers a download and keeps the original handle.
+      expect(savedFile.file.path, kIsWeb ? audio.file.path : newPath);
       expect(savedFile.name, audio.name);
       expect(savedFile.metadata, audio.metadata);
       expect(savedFile.size, audio.size);
@@ -417,7 +420,8 @@ void main() {
       final savedFile = await image.saveTo(newPath);
 
       expect(savedFile, isA<ImageFileMedia>());
-      expect(savedFile.file.path, newPath);
+      // On web saveTo triggers a download and keeps the original handle.
+      expect(savedFile.file.path, kIsWeb ? image.file.path : newPath);
       expect(savedFile.name, image.name);
       expect(savedFile.size, image.size);
       expect(await savedFile.file.exists(), isTrue);
@@ -431,7 +435,8 @@ void main() {
       final savedFile = await doc.saveTo(newPath);
 
       expect(savedFile, isA<DocumentFileMedia>());
-      expect(savedFile.file.path, newPath);
+      // On web saveTo triggers a download and keeps the original handle.
+      expect(savedFile.file.path, kIsWeb ? doc.file.path : newPath);
       expect(savedFile.name, doc.name);
       expect(savedFile.size, doc.size);
       expect(await savedFile.file.exists(), isTrue);
@@ -445,7 +450,8 @@ void main() {
       final savedFile = await other.saveTo(newPath);
 
       expect(savedFile, isA<OtherTypeFileMedia>());
-      expect(savedFile.file.path, newPath);
+      // On web saveTo triggers a download and keeps the original handle.
+      expect(savedFile.file.path, kIsWeb ? other.file.path : newPath);
       expect(savedFile.name, other.name);
       expect(savedFile.size, other.size);
       expect(await savedFile.file.exists(), isTrue);

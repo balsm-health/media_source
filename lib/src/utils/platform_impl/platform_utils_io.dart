@@ -81,7 +81,7 @@ class PlatformUtilsFacadeImpl extends PlatformUtilsFacade {
     try {
       final path = file.path;
       if (path.isEmpty) return false; // If path is empty, the file cannot exist
-      return File(path).exists();
+      return await File(path).exists();
     } catch (e) {
       return false;
     }

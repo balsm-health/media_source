@@ -5,6 +5,10 @@ const tempDir = 'test/assets/platform_utils_saved_to';
 
 void main() {
   group('PlatformUtilsFacade.createDirectoryIfNotExists', () {
+    setUpAll(() async {
+      await PlatformUtils.instance.deleteDirectory(tempDir);
+    });
+
     tearDownAll(() async {
       await PlatformUtils.instance.deleteDirectory(tempDir);
     });

@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:cross_file/cross_file.dart';
-import 'package:flutter/foundation.dart' show protected;
+import 'package:flutter/foundation.dart' show kIsWeb, protected;
 import 'package:media_source/src/media_type.dart';
 import 'package:media_source/src/sources/file_media_source.dart';
 import 'package:media_source/src/sources/media_source.dart';
@@ -80,13 +80,18 @@ abstract class MemoryMediaSource<M extends FileType> extends MediaSource<M> impl
   /// Creates the directory if it doesn't exist, then saves the bytes and
   /// returns a new [FileMediaSource] pointing to the saved file. Subclasses
   /// narrow the return type via [createFileMedia].
+  ///
+  /// On web, [path] only names the browser download; the returned source is
+  /// backed by a blob URL so it stays readable and deletable.
   @override
   Future<FileMediaSource<M>> saveTo(String path) async {
     final file = XFile.fromData(
       bytes,
       name: name,
       mimeType: mimeType,
-      path: path,
+      // On web a non-blob path is not addressable (and older cross_file
+      // versions read from it instead of the bytes), so let it create a blob.
+      path: kIsWeb ? null : path,
       length: size?.inBytes,
     );
     await PlatformUtils.instance.ensureParentDirectoryExists(path);
