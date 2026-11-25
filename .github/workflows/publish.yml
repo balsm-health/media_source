@@ -1,0 +1,53 @@
+name: Publish to pub.dev
+
+# pub.dev automated publishing (OIDC). Configured on pub.dev with
+# repository balsm-health/media_source and tag pattern v{{version}}.
+# Release: bump pubspec version, merge, then push a matching tag, e.g.
+#   git tag v2.0.0 && git push origin v2.0.0
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # Required to authenticate with pub.dev via OIDC.
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # Exchanges the GitHub OIDC token for pub.dev credentials. The Flutter
+      # SDK installed next picks them up from the same pub config.
+      - name: Configure pub.dev credentials
+        uses: dart-lang/setup-dart@v1
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Verify tag matches pubspec version
+        run: |
+          version=$(grep -E '^version:' pubspec.yaml | awk '{print $2}')
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match pubspec version v${version}"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze project source
+        run: dart analyze
+
+      - name: Run tests
+        timeout-minutes: 10
+        run: flutter test
+
+      - name: Publish
+        run: flutter pub publish --force
