@@ -4,9 +4,9 @@ import 'package:flutter/foundation.dart' show kIsWeb, protected;
 import 'package:media_source/src/media_type.dart';
 import 'package:media_source/src/sources/file_media_source.dart';
 import 'package:media_source/src/sources/media_source.dart';
+import 'package:media_source/src/utils/file_name.dart';
 import 'package:media_source/src/utils/platform_utils.dart';
 import 'package:file_sized/file_sized.dart';
-import 'package:path/path.dart' as p;
 import 'package:file_type_plus/file_type_plus.dart';
 
 /// Abstract base class for in-memory media sources.
@@ -101,8 +101,7 @@ abstract class MemoryMediaSource<M extends FileType> extends MediaSource<M> impl
   ///
   /// Returns a new [FileMediaSource] pointing to the saved file.
   Future<FileMediaSource<M>> saveToFolder(String folderPath) {
-    final path = p.join(folderPath, name);
-    return saveTo(path);
+    return saveTo(joinSafeFileName(folderPath, name));
   }
 }
 

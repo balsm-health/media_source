@@ -4,8 +4,8 @@ import 'package:media_source/src/media_type.dart';
 import 'package:media_source/src/sources/media_source.dart';
 import 'package:media_source/src/sources/memory_media_source.dart';
 import 'package:media_source/src/extensions/file_extensions.dart';
+import 'package:media_source/src/utils/file_name.dart';
 import 'package:media_source/src/utils/platform_utils.dart';
-import 'package:path/path.dart' as p;
 import 'package:file_sized/file_sized.dart';
 import 'package:file_type_plus/file_type_plus.dart';
 
@@ -79,7 +79,7 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   /// - [folderPath]: The directory where the file should be saved
   ///
   /// Returns a new [FileMediaSource] instance with the file in the folder.
-  Future<FileMediaSource<M>> saveToFolder(String folderPath) => saveTo(p.join(folderPath, name));
+  Future<FileMediaSource<M>> saveToFolder(String folderPath) => saveTo(joinSafeFileName(folderPath, name));
 
   /// Moves this media to a new file path.
   ///
@@ -121,7 +121,7 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   /// - [folderPath]: The directory where the file should be moved
   ///
   /// Returns a new [FileMediaSource] instance with the file in the folder.
-  Future<FileMediaSource<M>> moveToFolder(String folderPath) => moveTo(p.join(folderPath, name));
+  Future<FileMediaSource<M>> moveToFolder(String folderPath) => moveTo(joinSafeFileName(folderPath, name));
 
   /// Deletes the file from the file system.
   ///

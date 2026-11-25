@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2026-07-16
 
+### Security
+- `saveToFolder` and `moveToFolder` now use only the base name of `name`, so an absolute or
+  `../` name (for example one derived from an untrusted URL) can no longer write outside the
+  target folder. A name with no usable base name (empty, `.`, `..`, trailing separator) throws
+  an `ArgumentError`
+
 ### Fixed
 - `XFile.getMediaType` now honors the provided MIME type override; previously the parameter was
   silently ignored, so explicit `mimeType` arguments to `FileMediaSource.fromFile`/`fromPath` did
@@ -16,7 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `NetworkMediaSource.fromUrl` detects the media type from the parsed URI path, so query strings
   and fragments (e.g. `?token=a.b`) can no longer be mistaken for a file extension
 - `Uri.fileName` (and therefore default network media names) is now percent-decoded and handles
-  trailing slashes and extension-less URLs
+  trailing slashes and extension-less URLs. A segment whose decoding would introduce a path
+  separator or `.`/`..` (e.g. `%2F`), or that is invalid UTF-8, keeps its raw encoded form, so a
+  URL can't turn a media name into a path and constructors don't throw on bad encoding
 - `MemoryMediaSource` equality no longer hashes the full byte content on every `hashCode`/`==`
   call; content is compared only after the cheap fields match
 - Fixed misleading documentation of `MediaSource.extension` (returns the extension with its
