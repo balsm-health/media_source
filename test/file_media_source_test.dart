@@ -3,13 +3,13 @@
 library;
 
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:media_source/src/sources/file_media_source.dart';
 import 'package:media_source/src/sources/memory_media_source.dart';
 import 'package:media_source/src/extensions/file_extensions.dart';
 import 'package:media_source/src/utils/platform_utils.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'shared/fixture.dart';
 
@@ -375,8 +375,7 @@ void main() {
       final savedFile = await video.saveTo(newPath);
 
       expect(savedFile, isA<VideoFileMedia>());
-      // On web saveTo triggers a download and keeps the original handle.
-      expect(savedFile.file.path, kIsWeb ? video.file.path : newPath);
+      expect(savedFile.file.path, newPath);
       expect(savedFile.name, video.name);
       expect(savedFile.metadata, video.metadata);
       expect(savedFile.size, video.size);
@@ -391,8 +390,7 @@ void main() {
       final savedFile = await audio.saveTo(newPath);
 
       expect(savedFile, isA<AudioFileMedia>());
-      // On web saveTo triggers a download and keeps the original handle.
-      expect(savedFile.file.path, kIsWeb ? audio.file.path : newPath);
+      expect(savedFile.file.path, newPath);
       expect(savedFile.name, audio.name);
       expect(savedFile.metadata, audio.metadata);
       expect(savedFile.size, audio.size);
@@ -407,8 +405,7 @@ void main() {
       final savedFile = await image.saveTo(newPath);
 
       expect(savedFile, isA<ImageFileMedia>());
-      // On web saveTo triggers a download and keeps the original handle.
-      expect(savedFile.file.path, kIsWeb ? image.file.path : newPath);
+      expect(savedFile.file.path, newPath);
       expect(savedFile.name, image.name);
       expect(savedFile.size, image.size);
       expect(await savedFile.file.exists(), isTrue);
@@ -422,8 +419,7 @@ void main() {
       final savedFile = await doc.saveTo(newPath);
 
       expect(savedFile, isA<DocumentFileMedia>());
-      // On web saveTo triggers a download and keeps the original handle.
-      expect(savedFile.file.path, kIsWeb ? doc.file.path : newPath);
+      expect(savedFile.file.path, newPath);
       expect(savedFile.name, doc.name);
       expect(savedFile.size, doc.size);
       expect(await savedFile.file.exists(), isTrue);
@@ -437,8 +433,7 @@ void main() {
       final savedFile = await other.saveTo(newPath);
 
       expect(savedFile, isA<OtherTypeFileMedia>());
-      // On web saveTo triggers a download and keeps the original handle.
-      expect(savedFile.file.path, kIsWeb ? other.file.path : newPath);
+      expect(savedFile.file.path, newPath);
       expect(savedFile.name, other.name);
       expect(savedFile.size, other.size);
       expect(await savedFile.file.exists(), isTrue);
@@ -597,13 +592,14 @@ void main() {
       final video = await VideoFileMedia.fromPath(asset.file.path);
       final lockedDir = Directory('$tempDir/locked');
       final source = await video.saveTo('${lockedDir.path}/source.mp4');
-      await Process.run('chmod', ['555', lockedDir.path]);
+      final chmod = await Process.run('chmod', ['555', lockedDir.path]);
+      expect(chmod.exitCode, 0, reason: 'chmod failed: ${chmod.stderr}');
       addTearDown(() => Process.run('chmod', ['755', lockedDir.path]));
 
       await expectLater(source.moveTo('$tempDir/out/moved.mp4'), throwsStateError);
       expect(await source.file.exists(), isTrue);
       expect(await File('$tempDir/out/moved.mp4').exists(), isTrue);
-    }, skip: Platform.isWindows ? 'POSIX permissions only' : false);
+    }, skip: _skipPermissionTest());
 
     test('should move an in-memory file (XFile.fromData) without throwing', () async {
       final bytes = Uint8List.fromList([1, 2, 3, 4]);
@@ -777,4 +773,32 @@ void main() {
       expect(memoryMedia.bytes, await asset.file.readAsBytes());
     });
   });
+
+  group('mimeType override', () {
+    final noExtPath = '$tempDir/override/clip';
+
+    setUp(() async {
+      await PlatformUtils.instance.ensureParentDirectoryExists(noExtPath);
+      await File(noExtPath).writeAsBytes([0, 0, 0, 0]);
+    });
+
+    tearDownAll(() => PlatformUtils.instance.deleteDirectory(tempDir));
+
+    test('drives type detection when the path has no extension', () async {
+      final media = await FileMediaSource.fromPath(noExtPath, mimeType: 'video/mp4');
+      expect(media, isA<VideoFileMedia>());
+    });
+
+    test('falls back to other without an override', () async {
+      final media = await FileMediaSource.fromPath(noExtPath);
+      expect(media, isA<OtherTypeFileMedia>());
+    });
+  });
+}
+
+/// Directory permission bits only block non-root users on POSIX systems.
+Object _skipPermissionTest() {
+  if (Platform.isWindows) return 'POSIX permissions only';
+  final uid = (Process.runSync('id', ['-u']).stdout as String).trim();
+  return uid == '0' ? 'root ignores directory permissions' : false;
 }
