@@ -119,15 +119,6 @@ Future<String> videoAssetExample() async {
     duration: const Duration(seconds: 30),
   );
 
-  // Alternatively, construct synchronously when the size is already known
-  // (or not needed) - no bundle read happens until save/convert:
-  //   final video = VideoAssetMedia(
-  //     assetPath: 'assets/videos/intro.mp4',
-  //     name: 'Intro Video',
-  //     duration: const Duration(seconds: 30),
-  //     size: 2.mb,
-  //   );
-
   output.writeln('Video loaded from asset bundle:');
   output.writeln('  Asset path: ${video.assetPath}');
   output.writeln('  Name: ${video.name}');

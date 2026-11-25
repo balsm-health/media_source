@@ -29,22 +29,7 @@ void main() {
     });
   });
 
-  group('public constructors', () {
-    test('should construct synchronously with trusted size', () {
-      final asset = Fixture.sample_video;
-
-      final video = VideoAssetMedia(
-        assetPath: asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-        size: asset.size,
-      );
-
-      expect(video.assetPath, asset.file.path);
-      expect(video.size, asset.size);
-      expect(video.metadata.duration, asset.duration);
-    });
-
+  group('ImageAssetMedia public constructor', () {
     test('should default name to asset filename and detect MIME from path', () {
       final image = ImageAssetMedia(assetPath: 'assets/images/logo.png');
 
@@ -60,28 +45,6 @@ void main() {
       final constructed = ImageAssetMedia(assetPath: asset.file.path, bundle: bundle, size: asset.size);
 
       expect(constructed, loaded);
-    });
-
-    test('should convert to memory from a directly constructed instance', () async {
-      final asset = Fixture.sample_doc;
-
-      final doc = DocumentAssetMedia(assetPath: asset.file.path, bundle: bundle, size: asset.size);
-      final memory = await doc.convertToMemory();
-
-      expect(memory, isA<DocumentMemoryMedia>());
-      expect(memory.bytes, await asset.file.readAsBytes());
-    });
-
-    test('should construct every asset media type', () {
-      final sources = <AssetMediaSource>[
-        VideoAssetMedia(assetPath: 'assets/v.mp4'),
-        AudioAssetMedia(assetPath: 'assets/a.mp3'),
-        ImageAssetMedia(assetPath: 'assets/i.png'),
-        DocumentAssetMedia(assetPath: 'assets/d.pdf'),
-        OtherTypeAssetMedia(assetPath: 'assets/x.unknown'),
-      ];
-
-      expect(sources.map((s) => s.name), ['v.mp4', 'a.mp3', 'i.png', 'd.pdf', 'x.unknown']);
     });
   });
 

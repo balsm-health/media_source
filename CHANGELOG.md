@@ -44,6 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a different spelling (e.g. `./a.mp4` vs `a.mp4`)
 
 ### Changed
+- `ImageAssetMedia`'s public constructor now only requires `assetPath`; `name`, `size`, and
+  `mimeType` are optional. The given `size` is trusted as-is (or left null), so use
+  `ImageAssetMedia.load` when the size should be read from the asset bundle. The other asset
+  media types remain constructible only through `load()`
 - **BREAKING**: `FileMediaSource` and `MemoryMediaSource` gained abstract template hooks
   (`copyWithFile`, `createMemoryMedia`, `createFileMedia`). External subclasses must implement
   them; existing `saveTo` overrides keep working unchanged
@@ -78,11 +82,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `is` checks or `fold` instead
 
 ### Added
-- Public synchronous constructors for all asset media types (`VideoAssetMedia`,
-  `AudioAssetMedia`, `ImageAssetMedia`, `DocumentAssetMedia`, `OtherTypeAssetMedia`).
-  The constructor trusts the provided `size` (or leaves it null); use `load()` when the size
-  should be read from the asset bundle. Previously only `ImageAssetMedia` exposed a public
-  constructor, and it required all parameters
 - `PlatformUtilsFacade.moveFile` for fast native file renames
 - Lint enforcement via `flutter_lints` (previously no lint ruleset was included)
 
