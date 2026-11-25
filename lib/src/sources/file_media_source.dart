@@ -71,8 +71,8 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
     await PlatformUtils.instance.ensureParentDirectoryExists(path);
     await file.saveTo(path);
     final newSize = size ?? await file.size();
-    // coverage:ignore-line — web-only branch, unreachable in VM tests
-    if (kIsWeb) return copyWithFile(file, newSize);
+    // Web-only branch, unreachable in VM tests.
+    if (kIsWeb) return copyWithFile(file, newSize); // coverage:ignore-line
     return copyWithFile(
       XFile(path, name: name, mimeType: mimeType, length: newSize.inBytes),
       newSize,
@@ -112,11 +112,12 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
       return copyWithFile(moved, size ?? await moved.size());
     }
     final saved = await saveTo(path);
-    // coverage:ignore-line — web-only branch, unreachable in VM tests
-    if (kIsWeb) return saved;
+    // Web-only branch, unreachable in VM tests.
+    if (kIsWeb) return saved; // coverage:ignore-line
     final deleted = await delete();
-    // coverage:ignore-start — defensive: requires the copy to succeed while
-    // deleting the original fails, which needs fault injection to reproduce.
+    // Defensive: requires the copy to succeed while deleting the original
+    // fails, which needs fault injection to reproduce.
+    // coverage:ignore-start
     if (!deleted) {
       throw StateError('moveTo: copied "${file.path}" to "$path" but failed to delete the original file.');
     }
