@@ -4,6 +4,7 @@ library;
 
 import 'dart:io';
 
+import 'package:cross_file/cross_file.dart';
 import 'package:media_source/src/sources/file_media_source.dart';
 import 'package:media_source/src/sources/memory_media_source.dart';
 import 'package:media_source/src/extensions/file_extensions.dart';
@@ -603,6 +604,17 @@ void main() {
       expect(await source.file.exists(), isTrue);
       expect(await File('$tempDir/out/moved.mp4').exists(), isTrue);
     }, skip: Platform.isWindows ? 'POSIX permissions only' : false);
+
+    test('should move an in-memory file (XFile.fromData) without throwing', () async {
+      final bytes = Uint8List.fromList([1, 2, 3, 4]);
+      final media = await OtherTypeFileMedia.fromFile(XFile.fromData(bytes, name: 'picked.bin'));
+      final target = '$tempDir/picked/picked.bin';
+
+      final moved = await media.moveTo(target);
+
+      expect(moved.file.path, target);
+      expect(await File(target).readAsBytes(), bytes);
+    });
 
     test('should replace an existing file at the target', () async {
       final asset = Fixture.sample_video;

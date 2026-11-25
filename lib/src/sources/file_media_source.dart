@@ -88,9 +88,11 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   /// replaced. Returns early if the source path matches the destination.
   ///
   /// Throws a [StateError] on native platforms when the fallback copy
-  /// succeeds but the original file cannot be deleted (both files exist at
-  /// that point). On web the original is left in place, since the returned
-  /// source still reads from it (see [saveTo]).
+  /// succeeds but the original on-disk file cannot be deleted (both files
+  /// exist at that point). A source with no file on disk (e.g. created with
+  /// `XFile.fromData`) is simply written to [path]. On web the original is
+  /// left in place, since the returned source still reads from it (see
+  /// [saveTo]).
   ///
   /// Parameters:
   /// - [path]: The destination file path
@@ -105,9 +107,11 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
       final moved = XFile(path, name: name, mimeType: mimeType, length: size?.inBytes);
       return copyWithFile(moved, size ?? await moved.size());
     }
+    // An in-memory file (e.g. XFile.fromData from a picker) has nothing on
+    // disk to remove after copying, so only an on-disk source is deleted.
+    final sourceOnDisk = !kIsWeb && await file.exists();
     final saved = await saveTo(path);
-    // Web-only branch, unreachable in VM tests.
-    if (kIsWeb) return saved; // coverage:ignore-line
+    if (!sourceOnDisk) return saved;
     final deleted = await delete();
     if (!deleted) {
       throw StateError('moveTo: copied "${file.path}" to "$path" but failed to delete the original file.');

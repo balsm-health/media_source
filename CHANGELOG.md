@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reports `false`; use `XFile.fromData` for in-memory data. Servers that reject `HEAD`
   (403/405/501, e.g. S3/GCS presigned URLs) get a one-byte ranged `GET` instead, and each
   request times out after 10 seconds rather than hanging
+- `FileMediaSource.moveTo` on a source with no file on disk (e.g. `XFile.fromData` from a picker)
+  no longer writes the destination and then throws `StateError`
 - `FileMediaSource.moveTo` no longer pre-deletes an existing target. Rename and copy already
   replace it, and the pre-delete destroyed the source when the target named the same file under
   a different spelling (e.g. `./a.mp4` vs `a.mp4`)
