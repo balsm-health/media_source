@@ -11,6 +11,12 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Cancel an in-progress run when a newer commit lands on the same PR/branch.
+# Runs on main are never cancelled, so every merged commit gets a result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   build:
     name: build (Flutter ${{ matrix.flutter-version || 'stable' }})
