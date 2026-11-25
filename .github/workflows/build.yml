@@ -47,6 +47,11 @@ jobs:
       - name: Analyze project source
         run: dart analyze
 
+      # Fails on any pub.dev validation warning before a release is cut.
+      - name: Validate package for publishing
+        if: ${{ matrix.coverage }}
+        run: dart pub publish --dry-run
+
       # Your project will need to have tests in test/ and a dependency on
       # package:test for this step to succeed. Note that Flutter projects will
       # want to change this to 'flutter test'.
