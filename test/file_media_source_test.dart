@@ -595,7 +595,19 @@ void main() {
       expect(await movedFile.file.exists(), isTrue);
     });
 
-    test('should delete existing file at target before moving', () async {
+    test('should keep the file when the target is the same file spelled differently', () async {
+      final asset = Fixture.sample_video;
+      final video = await VideoFileMedia.fromPath(asset.file.path);
+      final path = '$tempDir/same_file.mp4';
+      final saved = await video.saveTo(path);
+
+      final moved = await saved.moveTo('./$path');
+
+      expect(await moved.file.exists(), isTrue);
+      expect(await moved.file.size(), video.size);
+    });
+
+    test('should replace an existing file at the target', () async {
       final asset = Fixture.sample_video;
       final video = await VideoFileMedia.fromPath(asset.file.path);
 

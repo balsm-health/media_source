@@ -90,9 +90,8 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   /// Moves this media to a new file path.
   ///
   /// Uses a fast platform rename when available and falls back to
-  /// copy + delete otherwise. If the destination already exists, it will be
-  /// deleted before moving. Returns early if the source path matches the
-  /// destination.
+  /// copy + delete otherwise. An existing file at the destination is
+  /// replaced. Returns early if the source path matches the destination.
   ///
   /// Throws a [StateError] on native platforms when the fallback copy
   /// succeeds but the original file cannot be deleted (both files exist at
@@ -105,10 +104,9 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   /// Returns a new [FileMediaSource] instance at the new location.
   Future<FileMediaSource<M>> moveTo(String path) async {
     if (file.path == path) return this;
-    final newPathFile = XFile(path);
-    if (await newPathFile.exists()) {
-      await newPathFile.delete();
-    }
+    // No pre-delete of an existing target: rename and copy both overwrite it,
+    // and deleting first would destroy the source when [path] names the same
+    // file under a different spelling (e.g. `./a.mp4` vs `a.mp4`).
     if (await PlatformUtils.instance.moveFile(file.path, path)) {
       final moved = XFile(path, name: name, mimeType: mimeType, length: size?.inBytes);
       return copyWithFile(moved, size ?? await moved.size());
