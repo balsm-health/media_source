@@ -11,6 +11,10 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Least privilege: the build only needs to read the repository.
+permissions:
+  contents: read
+
 # Cancel an in-progress run when a newer commit lands on the same PR/branch.
 # Runs on main are never cancelled, so every merged commit gets a result.
 concurrency:
