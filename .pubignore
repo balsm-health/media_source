@@ -1,2 +1,13 @@
-# Files to ignore when publishing to pub.dev
+# Files to ignore when publishing to pub.dev.
+# NOTE: when this file exists, pub ignores .gitignore in this directory,
+# so build/tool output must be listed here too.
 pubspec.lock
+build/
+coverage/
+.dart_tool/
+.claude/
+.github/
+.DS_Store
+*.iml
+.idea/
+.vscode/
