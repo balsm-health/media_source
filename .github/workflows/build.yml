@@ -50,14 +50,19 @@ jobs:
       # Your project will need to have tests in test/ and a dependency on
       # package:test for this step to succeed. Note that Flutter projects will
       # want to change this to 'flutter test'.
+      # Step timeouts make a hang fail fast and point at the step; the
+      # expanded reporter logs each test as it starts, so the last line names
+      # the culprit. (package:test already times out each test after 30s.)
       - name: Run tests
-        run: flutter test --coverage
+        timeout-minutes: 10
+        run: flutter test --coverage --reporter expanded
 
       # Disk-fixture suites are tagged @TestOn('vm'); this covers the web
       # branches (blob-backed saveTo/moveTo) that VM coverage can't reach.
       - name: Run web tests
         if: ${{ matrix.coverage }}
-        run: flutter test --platform chrome
+        timeout-minutes: 10
+        run: flutter test --platform chrome --reporter expanded
 
       - name: Codecov
         if: ${{ matrix.coverage }}
