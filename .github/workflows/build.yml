@@ -13,8 +13,18 @@ on:
 
 jobs:
   build:
+    name: build (Flutter ${{ matrix.flutter-version || 'stable' }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Lowest supported version (pubspec: flutter >=3.29.0).
+          - flutter-version: 3.29.0
+          # Latest stable; the only leg that uploads coverage.
+          - flutter-version: ''
+            coverage: true
 
     steps:
       - name: Checkout repository
@@ -24,7 +34,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.24.0
+          flutter-version: ${{ matrix.flutter-version }}
 
       - name: Install dependencies
         run: flutter pub get
@@ -44,6 +54,7 @@ jobs:
         run: flutter test --coverage
 
       - name: Codecov
+        if: ${{ matrix.coverage }}
         # You may pin to the exact commit or the version.
         uses: codecov/codecov-action@v5.5.1
         with:
