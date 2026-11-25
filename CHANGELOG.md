@@ -27,7 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BREAKING**: `FileMediaSource` and `MemoryMediaSource` gained abstract template hooks
   (`copyWithFile`, `createMemoryMedia`, `createFileMedia`). External subclasses must implement
   them; existing `saveTo` overrides keep working unchanged
-- **BREAKING**: minimum SDK is now Dart 3.4 (the `web` dependency already required it)
+- **BREAKING**: minimum SDK is now Dart 3.7 / Flutter 3.29, required by `cross_file` 0.3.5, which
+  fixes `XFile.fromData` ignoring its bytes on web when a path is set
 - **BREAKING**: `PlatformUtilsFacade.createDirectoryIfNotExists` is deprecated in favor of
   `ensureParentDirectoryExists`, which describes the actual behavior (the method always created
   the *parent* directory of the given path). Custom facade implementations must implement the
