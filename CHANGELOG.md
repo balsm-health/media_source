@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed misleading documentation of `MediaSource.extension` (returns the extension with its
   leading dot, or an empty string)
 - Removed meaningless `@override` annotations from constructors
+- Web `PlatformUtils.fileExists` no longer downloads the whole file: blob/data URLs are fetched
+  with the body cancelled unread, other URLs use `HEAD`. A revoked blob URL now reports `false`
+  (previously the cached bytes made it look alive)
 - `FileMediaSource.moveTo` no longer pre-deletes an existing target. Rename and copy already
   replace it, and the pre-delete destroyed the source when the target named the same file under
   a different spelling (e.g. `./a.mp4` vs `a.mp4`)

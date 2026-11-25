@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:media_source/src/extensions/file_extensions.dart';
 import 'package:media_source/src/sources/file_media_source.dart';
 import 'package:media_source/src/sources/memory_media_source.dart';
+import 'package:media_source/src/utils/platform_utils.dart';
 
 /// Web-only behavior of saveTo / moveTo. On web, `XFile.saveTo` only triggers
 /// a browser download, so the destination path is never addressable and the
@@ -52,6 +53,28 @@ void main() {
 
       expect(await moved.file.exists(), isTrue);
       expect(await moved.file.readAsBytes(), bytes);
+    });
+  });
+
+  group('PlatformUtils.fileExists (web)', () {
+    test('is true for a live blob URL', () async {
+      final file = XFile.fromData(bytes, name: 'a.bin');
+      expect(await PlatformUtils.instance.fileExists(file), isTrue);
+    });
+
+    test('is false once the blob URL is revoked', () async {
+      final file = XFile.fromData(bytes, name: 'a.bin');
+      expect(await PlatformUtils.instance.deleteFile(file), isTrue);
+      expect(await PlatformUtils.instance.fileExists(file), isFalse);
+    });
+
+    test('is false for an empty path', () async {
+      expect(await PlatformUtils.instance.fileExists(XFile('')), isFalse);
+    });
+
+    test('is true for a non-addressable path with cached bytes', () async {
+      final file = XFile('not/served/a.bin', bytes: bytes);
+      expect(await PlatformUtils.instance.fileExists(file), isTrue);
     });
   });
 }

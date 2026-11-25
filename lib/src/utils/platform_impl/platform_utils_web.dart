@@ -1,3 +1,5 @@
+import 'dart:js_interop';
+
 import 'package:cross_file/cross_file.dart';
 import 'package:media_source/src/utils/platform_utils.dart';
 import 'package:web/web.dart' as web;
@@ -61,22 +63,34 @@ class PlatformUtilsFacadeImpl extends PlatformUtilsFacade {
     return true;
   }
 
-  /// Attempts to verify a file exists on the web by trying to read it.
+  /// Checks that the [XFile]'s resource is reachable without downloading it.
   ///
-  /// This method is conservative: it will attempt to read the bytes from
-  /// the [XFile] and return true if that succeeds, false otherwise.
+  /// `blob:` / `data:` URLs are fetched and the body is cancelled unread
+  /// (blob URLs only support GET); the fetch result is authoritative, so a
+  /// revoked blob URL reports `false` even if the [XFile] still caches bytes.
+  /// Other URLs get a `HEAD` request and, when that fails, fall back to
+  /// reading the bytes, which covers an [XFile] created with cached `bytes`
+  /// and a non-addressable path.
   @override
   Future<bool> fileExists(XFile xFile) async {
-    // On web, files are either:
-    // 1. Blob URLs (in memory) - exist if the URL is valid
-    // 2. Data URLs - always exist
-    // 3. HTTP/HTTPS URLs - would need network check
-    // 4. Files from picker - exist by definition
-
+    final path = xFile.path;
+    if (path.isEmpty) return false;
+    final inMemory = path.startsWith('blob:') || path.startsWith('data:');
+    if (await _isReachable(path, inMemory: inMemory)) return true;
+    if (inMemory) return false;
     try {
-      // Try to read the file to verify it exists and is accessible
       await xFile.readAsBytes();
       return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<bool> _isReachable(String url, {required bool inMemory}) async {
+    try {
+      final response = await web.window.fetch(url.toJS, web.RequestInit(method: inMemory ? 'GET' : 'HEAD')).toDart;
+      if (inMemory) await response.body?.cancel().toDart;
+      return response.ok;
     } catch (e) {
       return false;
     }
