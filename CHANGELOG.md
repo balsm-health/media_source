@@ -23,8 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   leading dot, or an empty string)
 - Removed meaningless `@override` annotations from constructors
 - Web `PlatformUtils.fileExists` no longer downloads the whole file: blob/data URLs are fetched
-  with the body cancelled unread, other URLs use `HEAD`. A revoked blob URL now reports `false`
-  (previously the cached bytes made it look alive)
+  with the body cancelled unread, other URLs use `HEAD`. The HTTP response is authoritative:
+  a revoked blob URL or a 404 now reports `false` (previously the cached bytes, or the 404
+  page body, made it look alive). An `XFile(path, bytes: ...)` with a non-addressable path now
+  reports `false`; use `XFile.fromData` for in-memory data
 - `FileMediaSource.moveTo` no longer pre-deletes an existing target. Rename and copy already
   replace it, and the pre-delete destroyed the source when the target named the same file under
   a different spelling (e.g. `./a.mp4` vs `a.mp4`)

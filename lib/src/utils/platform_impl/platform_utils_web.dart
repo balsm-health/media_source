@@ -66,18 +66,17 @@ class PlatformUtilsFacadeImpl extends PlatformUtilsFacade {
   /// Checks that the [XFile]'s resource is reachable without downloading it.
   ///
   /// `blob:` / `data:` URLs are fetched and the body is cancelled unread
-  /// (blob URLs only support GET); the fetch result is authoritative, so a
-  /// revoked blob URL reports `false` even if the [XFile] still caches bytes.
-  /// Other URLs get a `HEAD` request and, when that fails, fall back to
-  /// reading the bytes, which covers an [XFile] created with cached `bytes`
-  /// and a non-addressable path.
+  /// (blob URLs only support GET); other URLs get a `HEAD` request. An HTTP
+  /// response is authoritative: a revoked blob or a 404 reports `false`, even
+  /// if the [XFile] caches bytes (use `XFile.fromData` for in-memory data).
+  /// Only when the request itself fails (e.g. network or CORS error) does
+  /// this fall back to reading the bytes.
   @override
   Future<bool> fileExists(XFile xFile) async {
     final path = xFile.path;
     if (path.isEmpty) return false;
-    final inMemory = path.startsWith('blob:') || path.startsWith('data:');
-    if (await _isReachable(path, inMemory: inMemory)) return true;
-    if (inMemory) return false;
+    final reachable = await _isReachable(path);
+    if (reachable != null) return reachable;
     try {
       await xFile.readAsBytes();
       return true;
@@ -86,13 +85,19 @@ class PlatformUtilsFacadeImpl extends PlatformUtilsFacade {
     }
   }
 
-  Future<bool> _isReachable(String url, {required bool inMemory}) async {
+  /// Returns whether [url] answered with a success status, or `null` when
+  /// the request failed without a usable response.
+  ///
+  /// A revoked blob URL rejects the fetch, so for `blob:` / `data:` URLs a
+  /// failure is a definite `false` rather than `null`.
+  Future<bool?> _isReachable(String url) async {
+    final inMemory = url.startsWith('blob:') || url.startsWith('data:');
     try {
       final response = await web.window.fetch(url.toJS, web.RequestInit(method: inMemory ? 'GET' : 'HEAD')).toDart;
       if (inMemory) await response.body?.cancel().toDart;
       return response.ok;
     } catch (e) {
-      return false;
+      return inMemory ? false : null;
     }
   }
 }

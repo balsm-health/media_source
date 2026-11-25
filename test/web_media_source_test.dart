@@ -72,9 +72,15 @@ void main() {
       expect(await PlatformUtils.instance.fileExists(XFile('')), isFalse);
     });
 
-    test('is true for a non-addressable path with cached bytes', () async {
+    test('is false for a URL that returns 404', () async {
+      expect(await PlatformUtils.instance.fileExists(XFile('not/served/a.bin')), isFalse);
+    });
+
+    // The HTTP status is authoritative: a non-addressable path reports false
+    // even when the XFile caches bytes. Use XFile.fromData for in-memory data.
+    test('is false for a non-addressable path even with cached bytes', () async {
       final file = XFile('not/served/a.bin', bytes: bytes);
-      expect(await PlatformUtils.instance.fileExists(file), isTrue);
+      expect(await PlatformUtils.instance.fileExists(file), isFalse);
     });
   });
 }
