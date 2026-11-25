@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Keep workflow actions current; an outdated codecov-action already broke CI
+  # once by failing to verify the Codecov CLI signature.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      pub:
+        patterns: ["*"]
