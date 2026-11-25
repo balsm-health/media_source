@@ -78,55 +78,37 @@ void main() {
     group('when', () {
       test('should call image callback for ImageType', () {
         final imageType = ImageType();
-        final result = imageType.fold(
-          image: (_) => 'image',
-          orElse: () => 'other',
-        );
+        final result = imageType.fold(image: (_) => 'image', orElse: () => 'other');
         expect(result, 'image');
       });
 
       test('should call audio callback for AudioType', () {
         final audioType = AudioType();
-        final result = audioType.fold(
-          audio: (_) => 'audio',
-          orElse: () => 'other',
-        );
+        final result = audioType.fold(audio: (_) => 'audio', orElse: () => 'other');
         expect(result, 'audio');
       });
 
       test('should call video callback for VideoType', () {
         final videoType = VideoType();
-        final result = videoType.fold(
-          video: (_) => 'video',
-          orElse: () => 'other',
-        );
+        final result = videoType.fold(video: (_) => 'video', orElse: () => 'other');
         expect(result, 'video');
       });
 
       test('should call document callback for DocumentType', () {
         final documentType = DocumentType();
-        final result = documentType.fold(
-          document: (_) => 'document',
-          orElse: () => 'other',
-        );
+        final result = documentType.fold(document: (_) => 'document', orElse: () => 'other');
         expect(result, 'document');
       });
 
       test('should call orElse when no callback matches', () {
         final imageType = ImageType();
-        final result = imageType.fold(
-          audio: (_) => 'audio',
-          orElse: () => 'other',
-        );
+        final result = imageType.fold(audio: (_) => 'audio', orElse: () => 'other');
         expect(result, 'other');
       });
 
       test('should call url callback for UrlType', () {
         final urlType = UrlType();
-        final result = urlType.fold(
-          url: (_) => 'url',
-          orElse: () => 'other',
-        );
+        final result = urlType.fold(url: (_) => 'url', orElse: () => 'other');
         expect(result, 'url');
       });
     });

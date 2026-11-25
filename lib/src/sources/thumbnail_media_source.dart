@@ -19,15 +19,8 @@ class ThumbnailMediaSource<M extends FileType, T extends FileType> extends Media
   ///
   /// [original] is required and provides the main content and metadata.
   /// [thumbnail] is optional and provides a preview image.
-  ThumbnailMediaSource({
-    required this.original,
-    this.thumbnail,
-  }) : super(
-          metadata: original.metadata,
-          mimeType: original.mimeType,
-          name: original.name,
-          size: original.size,
-        );
+  ThumbnailMediaSource({required this.original, this.thumbnail})
+    : super(metadata: original.metadata, mimeType: original.mimeType, name: original.name, size: original.size);
 
   /// Returns `true` if a [thumbnail] source is available.
   bool get hasThumbnail => thumbnail != null;

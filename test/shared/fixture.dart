@@ -7,11 +7,7 @@ class Fixture {
   static const pathes = Pathes();
 
   /// size: 13928213 bytes
-  static final sample_image = AssetData.path(
-    pathes.sample_image,
-    481391.b,
-    'image/jpeg',
-  );
+  static final sample_image = AssetData.path(pathes.sample_image, 481391.b, 'image/jpeg');
 
   /// size: 1763570 bytes
   /// mimeType: video/mp4
@@ -32,16 +28,8 @@ class Fixture {
     'audio/mpeg',
     Duration(milliseconds: 51905),
   );
-  static final sample_doc = AssetData.path(
-    pathes.sample_document,
-    142786.b,
-    'application/pdf',
-  );
-  static final sample_unknown_file = AssetData.path(
-    pathes.sample_unknown_file,
-    3.b,
-    'application/x-sh',
-  );
+  static final sample_doc = AssetData.path(pathes.sample_document, 142786.b, 'application/pdf');
+  static final sample_unknown_file = AssetData.path(pathes.sample_unknown_file, 3.b, 'application/x-sh');
 }
 
 class AssetData {
@@ -50,12 +38,7 @@ class AssetData {
   final String mimeType;
   final Duration? duration;
 
-  AssetData.path(
-    String path,
-    this.size,
-    this.mimeType, [
-    this.duration,
-  ]) : file = XFile(path);
+  AssetData.path(String path, this.size, this.mimeType, [this.duration]) : file = XFile(path);
 }
 
 class Pathes {

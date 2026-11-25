@@ -31,8 +31,10 @@ abstract class PlatformUtilsFacade {
   Future<void> ensureParentDirectoryExists(String filePath);
 
   /// Ensures the parent directory of [directoryPath] exists.
-  @Deprecated('Despite its name, this creates the parent directory of the given path, '
-      'not the directory itself. Use ensureParentDirectoryExists instead.')
+  @Deprecated(
+    'Despite its name, this creates the parent directory of the given path, '
+    'not the directory itself. Use ensureParentDirectoryExists instead.',
+  )
   Future<void> createDirectoryIfNotExists(String directoryPath) => ensureParentDirectoryExists(directoryPath);
 
   /// Moves the file at [sourcePath] to [destinationPath] using a fast

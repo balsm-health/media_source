@@ -48,10 +48,7 @@ abstract class AssetMediaSource<M extends FileType> extends MediaSource<M>
     required String? name,
     required super.size,
     required String? mimeType,
-  }) : super(
-          mimeType: mimeType ?? FileUtil.getMimeTypeFromPath(assetPath),
-          name: name ?? p.basename(assetPath),
-        );
+  }) : super(mimeType: mimeType ?? FileUtil.getMimeTypeFromPath(assetPath), name: name ?? p.basename(assetPath));
 
   /// Saves this asset to the file system at the specified path.
   ///
@@ -133,14 +130,8 @@ class VideoAssetMedia extends AssetMediaSource<VideoType> {
   /// - [duration]: Optional video duration
   /// - [size]: Optional asset size in bytes
   /// - [mimeType]: Optional MIME type, auto-detected from path if not provided
-  VideoAssetMedia({
-    required super.assetPath,
-    super.bundle,
-    super.name,
-    Duration? duration,
-    super.size,
-    super.mimeType,
-  }) : super._(metadata: VideoType(duration));
+  VideoAssetMedia({required super.assetPath, super.bundle, super.name, Duration? duration, super.size, super.mimeType})
+    : super._(metadata: VideoType(duration));
 
   /// Loads a video asset from the Flutter asset bundle.
   ///
@@ -216,14 +207,8 @@ class AudioAssetMedia extends AssetMediaSource<AudioType> {
   /// - [duration]: Optional audio duration
   /// - [size]: Optional asset size in bytes
   /// - [mimeType]: Optional MIME type, auto-detected from path if not provided
-  AudioAssetMedia({
-    required super.assetPath,
-    super.bundle,
-    super.name,
-    Duration? duration,
-    super.size,
-    super.mimeType,
-  }) : super._(metadata: AudioType(duration));
+  AudioAssetMedia({required super.assetPath, super.bundle, super.name, Duration? duration, super.size, super.mimeType})
+    : super._(metadata: AudioType(duration));
 
   /// Loads an audio asset from the Flutter asset bundle.
   ///
@@ -298,13 +283,8 @@ class ImageAssetMedia extends AssetMediaSource<ImageType> {
   /// - [name]: Optional display name, defaults to the asset filename
   /// - [size]: Optional asset size in bytes
   /// - [mimeType]: Optional MIME type, auto-detected from path if not provided
-  ImageAssetMedia({
-    required super.assetPath,
-    super.bundle,
-    super.name,
-    super.size,
-    super.mimeType,
-  }) : super._(metadata: ImageType());
+  ImageAssetMedia({required super.assetPath, super.bundle, super.name, super.size, super.mimeType})
+    : super._(metadata: ImageType());
 
   /// Loads an image asset from the Flutter asset bundle.
   ///
@@ -343,11 +323,7 @@ class ImageAssetMedia extends AssetMediaSource<ImageType> {
   /// Returns an [ImageMemoryMedia] with the asset's data in memory.
   @override
   Future<MemoryMediaSource<ImageType>> convertToMemory() async {
-    return ImageMemoryMedia(
-      await AssetMediaSource.loadAsset(assetPath, bundle),
-      name: name,
-      mimeType: mimeType,
-    );
+    return ImageMemoryMedia(await AssetMediaSource.loadAsset(assetPath, bundle), name: name, mimeType: mimeType);
   }
 }
 
@@ -373,13 +349,8 @@ class DocumentAssetMedia extends AssetMediaSource<DocumentType> {
   /// - [name]: Optional display name, defaults to the asset filename
   /// - [size]: Optional asset size in bytes
   /// - [mimeType]: Optional MIME type, auto-detected from path if not provided
-  DocumentAssetMedia({
-    required super.assetPath,
-    super.bundle,
-    super.name,
-    super.size,
-    super.mimeType,
-  }) : super._(metadata: DocumentType());
+  DocumentAssetMedia({required super.assetPath, super.bundle, super.name, super.size, super.mimeType})
+    : super._(metadata: DocumentType());
 
   /// Loads a document asset from the Flutter asset bundle.
   ///
@@ -418,11 +389,7 @@ class DocumentAssetMedia extends AssetMediaSource<DocumentType> {
   /// Returns a [DocumentMemoryMedia] with the asset's data in memory.
   @override
   Future<MemoryMediaSource<DocumentType>> convertToMemory() async {
-    return DocumentMemoryMedia(
-      await AssetMediaSource.loadAsset(assetPath, bundle),
-      name: name,
-      mimeType: mimeType,
-    );
+    return DocumentMemoryMedia(await AssetMediaSource.loadAsset(assetPath, bundle), name: name, mimeType: mimeType);
   }
 }
 
@@ -448,13 +415,8 @@ class OtherTypeAssetMedia extends AssetMediaSource<OtherType> {
   /// - [name]: Optional display name, defaults to the asset filename
   /// - [size]: Optional asset size in bytes
   /// - [mimeType]: Optional MIME type, auto-detected from path if not provided
-  OtherTypeAssetMedia({
-    required super.assetPath,
-    super.bundle,
-    super.name,
-    super.size,
-    super.mimeType,
-  }) : super._(metadata: OtherType());
+  OtherTypeAssetMedia({required super.assetPath, super.bundle, super.name, super.size, super.mimeType})
+    : super._(metadata: OtherType());
 
   /// Loads an asset of unknown type from the Flutter asset bundle.
   ///
@@ -493,10 +455,6 @@ class OtherTypeAssetMedia extends AssetMediaSource<OtherType> {
   /// Returns an [OtherTypeMemoryMedia] with the asset's data in memory.
   @override
   Future<MemoryMediaSource<OtherType>> convertToMemory() async {
-    return OtherTypeMemoryMedia(
-      await AssetMediaSource.loadAsset(assetPath, bundle),
-      name: name,
-      mimeType: mimeType,
-    );
+    return OtherTypeMemoryMedia(await AssetMediaSource.loadAsset(assetPath, bundle), name: name, mimeType: mimeType);
   }
 }

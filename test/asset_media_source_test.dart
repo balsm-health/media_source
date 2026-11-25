@@ -57,11 +57,7 @@ void main() {
       final asset = Fixture.sample_image;
 
       final loaded = await ImageAssetMedia.load(asset.file.path, bundle: bundle);
-      final constructed = ImageAssetMedia(
-        assetPath: asset.file.path,
-        bundle: bundle,
-        size: asset.size,
-      );
+      final constructed = ImageAssetMedia(assetPath: asset.file.path, bundle: bundle, size: asset.size);
 
       expect(constructed, loaded);
     });
@@ -69,11 +65,7 @@ void main() {
     test('should convert to memory from a directly constructed instance', () async {
       final asset = Fixture.sample_doc;
 
-      final doc = DocumentAssetMedia(
-        assetPath: asset.file.path,
-        bundle: bundle,
-        size: asset.size,
-      );
+      final doc = DocumentAssetMedia(assetPath: asset.file.path, bundle: bundle, size: asset.size);
       final memory = await doc.convertToMemory();
 
       expect(memory, isA<DocumentMemoryMedia>());
@@ -116,11 +108,7 @@ void main() {
     test('should create with custom bundle', () async {
       final asset = Fixture.sample_video;
 
-      final video = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final video = await VideoAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
 
       expect(video.bundle, bundle);
       expect(video.size, asset.size);
@@ -129,11 +117,7 @@ void main() {
     test('should create with provided size to avoid loading', () async {
       final asset = Fixture.sample_video;
 
-      final video = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        size: asset.size,
-      );
+      final video = await VideoAssetMedia.load(asset.file.path, bundle: bundle, size: asset.size);
 
       expect(video.size, asset.size);
     });
@@ -141,10 +125,7 @@ void main() {
     test('should auto-detect MIME type from path', () async {
       final asset = Fixture.sample_video;
 
-      final video = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-      );
+      final video = await VideoAssetMedia.load(asset.file.path, bundle: bundle);
 
       expect(video.mimeType, asset.mimeType);
     });
@@ -152,10 +133,7 @@ void main() {
     test('should use default name from asset path', () async {
       final asset = Fixture.sample_video;
 
-      final video = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-      );
+      final video = await VideoAssetMedia.load(asset.file.path, bundle: bundle);
 
       expect(video.name, 'sample_video.mp4');
     });
@@ -164,21 +142,9 @@ void main() {
       final asset = Fixture.sample_video;
       const duration2 = Duration(seconds: 20);
 
-      final video1 = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
-      final video2 = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
-      final video3 = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: duration2,
-      );
+      final video1 = await VideoAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
+      final video2 = await VideoAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
+      final video3 = await VideoAssetMedia.load(asset.file.path, bundle: bundle, duration: duration2);
 
       expect(video1, video2);
       expect(video1, isNot(video3));
@@ -205,11 +171,7 @@ void main() {
     test('should save to file system', () async {
       final asset = Fixture.sample_video;
 
-      final video = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final video = await VideoAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
 
       final filePath = '$tempDir/saved_video.mp4';
       final savedFile = await video.saveTo(filePath);
@@ -265,11 +227,7 @@ void main() {
     test('should convert to memory representation', () async {
       final asset = Fixture.sample_video;
 
-      final video = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final video = await VideoAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
 
       final memoryMedia = await video.convertToMemory();
 
@@ -304,16 +262,8 @@ void main() {
     test('should be equatable', () async {
       final asset = Fixture.sample_audio;
 
-      final audio1 = await AudioAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
-      final audio2 = await AudioAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final audio1 = await AudioAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
+      final audio2 = await AudioAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
       final audio3 = await AudioAssetMedia.load(
         asset.file.path,
         bundle: bundle,
@@ -334,11 +284,7 @@ void main() {
     test('should save to file system', () async {
       final asset = Fixture.sample_audio;
 
-      final audio = await AudioAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final audio = await AudioAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
 
       final filePath = '$tempDir/saved_audio.mp3';
       final savedFile = await audio.saveTo(filePath);
@@ -356,11 +302,7 @@ void main() {
     test('should convert to memory representation', () async {
       final asset = Fixture.sample_audio;
 
-      final audio = await AudioAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final audio = await AudioAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
 
       final memoryMedia = await audio.convertToMemory();
 
@@ -394,11 +336,7 @@ void main() {
 
       final image1 = await ImageAssetMedia.load(asset.file.path, bundle: bundle);
       final image2 = await ImageAssetMedia.load(asset.file.path, bundle: bundle);
-      final image3 = await ImageAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        name: 'different.jpg',
-      );
+      final image3 = await ImageAssetMedia.load(asset.file.path, bundle: bundle, name: 'different.jpg');
 
       expect(image1, image2);
       expect(image1, isNot(image3));
@@ -471,11 +409,7 @@ void main() {
 
       final doc1 = await DocumentAssetMedia.load(asset.file.path, bundle: bundle);
       final doc2 = await DocumentAssetMedia.load(asset.file.path, bundle: bundle);
-      final doc3 = await DocumentAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        mimeType: 'application/custom',
-      );
+      final doc3 = await DocumentAssetMedia.load(asset.file.path, bundle: bundle, mimeType: 'application/custom');
 
       expect(doc1, doc2);
       expect(doc1, isNot(doc3));
@@ -548,11 +482,7 @@ void main() {
 
       final other1 = await OtherTypeAssetMedia.load(asset.file.path, bundle: bundle);
       final other2 = await OtherTypeAssetMedia.load(asset.file.path, bundle: bundle);
-      final other3 = await OtherTypeAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        name: 'different.sh',
-      );
+      final other3 = await OtherTypeAssetMedia.load(asset.file.path, bundle: bundle, name: 'different.sh');
 
       expect(other1, other2);
       expect(other1, isNot(other3));
@@ -607,10 +537,7 @@ void main() {
     test('should handle asset with no extension', () async {
       final asset = Fixture.sample_unknown_file;
 
-      final other = await OtherTypeAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-      );
+      final other = await OtherTypeAssetMedia.load(asset.file.path, bundle: bundle);
 
       expect(other.name, isNotEmpty);
       expect(other.size, asset.size);
@@ -619,10 +546,7 @@ void main() {
     test('should handle large asset sizes', () async {
       final asset = Fixture.sample_video;
 
-      final video = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-      );
+      final video = await VideoAssetMedia.load(asset.file.path, bundle: bundle);
 
       expect(video.size!, asset.size); // > 1MB
     });
@@ -630,10 +554,7 @@ void main() {
     test('should handle small asset', () async {
       final asset = Fixture.sample_unknown_file;
 
-      final other = await OtherTypeAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-      );
+      final other = await OtherTypeAssetMedia.load(asset.file.path, bundle: bundle);
 
       expect(other.size, asset.size);
     });
@@ -643,10 +564,7 @@ void main() {
     test('should use provided bundle for all operations', () async {
       final asset = Fixture.sample_image;
 
-      final image = await ImageAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-      );
+      final image = await ImageAssetMedia.load(asset.file.path, bundle: bundle);
 
       expect(image.bundle, bundle);
 
@@ -690,11 +608,7 @@ void main() {
     test('should support asset -> memory -> file conversion chain', () async {
       final asset = Fixture.sample_audio;
 
-      final assetMedia = await AudioAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final assetMedia = await AudioAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
 
       final memoryMedia = await assetMedia.convertToMemory();
       expect(memoryMedia, isA<AudioMemoryMedia>());
@@ -713,11 +627,7 @@ void main() {
     test('should preserve video duration through conversions', () async {
       final asset = Fixture.sample_video;
 
-      final assetMedia = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final assetMedia = await VideoAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
 
       final memoryMedia = await assetMedia.convertToMemory();
       expect(memoryMedia.metadata.duration, asset.duration);
@@ -729,11 +639,7 @@ void main() {
     test('should preserve audio duration through conversions', () async {
       final asset = Fixture.sample_audio;
 
-      final assetMedia = await AudioAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final assetMedia = await AudioAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
 
       final memoryMedia = await assetMedia.convertToMemory();
       expect(memoryMedia.metadata.duration, asset.duration);
@@ -746,11 +652,7 @@ void main() {
       final asset = Fixture.sample_image;
       const customMimeType = 'image/custom-format';
 
-      final assetMedia = await ImageAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        mimeType: customMimeType,
-      );
+      final assetMedia = await ImageAssetMedia.load(asset.file.path, bundle: bundle, mimeType: customMimeType);
 
       final memoryMedia = await assetMedia.convertToMemory();
       expect(memoryMedia.mimeType, customMimeType);
@@ -763,11 +665,7 @@ void main() {
       final asset = Fixture.sample_doc;
       const customName = 'my_custom_document.pdf';
 
-      final assetMedia = await DocumentAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        name: customName,
-      );
+      final assetMedia = await DocumentAssetMedia.load(asset.file.path, bundle: bundle, name: customName);
 
       expect(assetMedia.name, customName);
 
@@ -783,11 +681,7 @@ void main() {
     test('should load real video asset', () async {
       final asset = Fixture.sample_video;
 
-      final video = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final video = await VideoAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
 
       expect(video.assetPath, asset.file.path);
       expect(video.name, asset.file.name);
@@ -799,11 +693,7 @@ void main() {
     test('should load real audio asset', () async {
       final asset = Fixture.sample_audio;
 
-      final audio = await AudioAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final audio = await AudioAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
 
       expect(audio.assetPath, asset.file.path);
       expect(audio.name, asset.file.name);
@@ -815,10 +705,7 @@ void main() {
     test('should load real image asset', () async {
       final asset = Fixture.sample_image;
 
-      final image = await ImageAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-      );
+      final image = await ImageAssetMedia.load(asset.file.path, bundle: bundle);
 
       expect(image.assetPath, asset.file.path);
       expect(image.name, asset.file.name);
@@ -829,10 +716,7 @@ void main() {
     test('should load real document asset', () async {
       final asset = Fixture.sample_doc;
 
-      final doc = await DocumentAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-      );
+      final doc = await DocumentAssetMedia.load(asset.file.path, bundle: bundle);
 
       expect(doc.assetPath, asset.file.path);
       expect(doc.name, asset.file.name);
@@ -843,10 +727,7 @@ void main() {
     test('should load real unknown file asset', () async {
       final asset = Fixture.sample_unknown_file;
 
-      final other = await OtherTypeAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-      );
+      final other = await OtherTypeAssetMedia.load(asset.file.path, bundle: bundle);
 
       expect(other.assetPath, asset.file.path);
       expect(other.name, asset.file.name);
@@ -856,11 +737,7 @@ void main() {
 
     test('should convert real video asset to memory', () async {
       final asset = Fixture.sample_video;
-      final video = await VideoAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final video = await VideoAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
 
       final memoryMedia = await video.convertToMemory();
 
@@ -873,10 +750,7 @@ void main() {
     test('should save real image asset to file', () async {
       final asset = Fixture.sample_image;
 
-      final image = await ImageAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-      );
+      final image = await ImageAssetMedia.load(asset.file.path, bundle: bundle);
 
       final savedFile = await image.saveTo('$tempDir/real_sample_image.jpg');
 
@@ -892,11 +766,7 @@ void main() {
     test('should handle real asset conversion chain', () async {
       final asset = Fixture.sample_audio;
 
-      final audio = await AudioAssetMedia.load(
-        asset.file.path,
-        bundle: bundle,
-        duration: asset.duration,
-      );
+      final audio = await AudioAssetMedia.load(asset.file.path, bundle: bundle, duration: asset.duration);
 
       // asset -> memory
       final memoryMedia = await audio.convertToMemory();

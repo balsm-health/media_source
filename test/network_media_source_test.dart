@@ -115,17 +115,13 @@ void main() {
       });
 
       test('should detect media type from path, ignoring query string', () {
-        final source = NetworkMediaSource.fromUrl(
-          'https://example.com/video.mp4?token=abc.xyz',
-        );
+        final source = NetworkMediaSource.fromUrl('https://example.com/video.mp4?token=abc.xyz');
 
         expect(source, isA<VideoNetworkMedia>());
       });
 
       test('should percent-decode file name from URL path', () {
-        final source = NetworkMediaSource.fromUrl(
-          'https://example.com/my%20video.mp4',
-        );
+        final source = NetworkMediaSource.fromUrl('https://example.com/my%20video.mp4');
 
         expect(source.name, 'my video.mp4');
       });
@@ -133,9 +129,7 @@ void main() {
 
     group('fromUrlOrNull', () {
       test('should return NetworkMediaSource for valid URL', () {
-        final source = NetworkMediaSource.fromUrlOrNull(
-          'https://example.com/video.mp4',
-        );
+        final source = NetworkMediaSource.fromUrlOrNull('https://example.com/video.mp4');
 
         expect(source, isNotNull);
         expect(source, isA<NetworkMediaSource>());
@@ -393,9 +387,7 @@ void main() {
 
     group('UrlMedia', () {
       test('should create with Uri constructor', () {
-        final urlMedia = UrlMedia(
-          Uri.parse('https://example.com/file.dat'),
-        );
+        final urlMedia = UrlMedia(Uri.parse('https://example.com/file.dat'));
 
         expect(urlMedia.uri.toString(), 'https://example.com/file.dat');
         expect(urlMedia.size, isNull);
@@ -404,9 +396,7 @@ void main() {
       });
 
       test('should create from url string using .url constructor', () {
-        final urlMedia = UrlMedia.url(
-          'https://example.com/data.bin',
-        );
+        final urlMedia = UrlMedia.url('https://example.com/data.bin');
 
         expect(urlMedia.uri.toString(), 'https://example.com/data.bin');
         expect(urlMedia.size, isNull);
@@ -435,9 +425,7 @@ void main() {
 
     group('properties', () {
       test('should parse URI correctly', () {
-        final source = NetworkMediaSource.fromUrl(
-          'https://example.com:8080/path/to/video.mp4?param=value',
-        );
+        final source = NetworkMediaSource.fromUrl('https://example.com:8080/path/to/video.mp4?param=value');
 
         expect(source.uri.scheme, 'https');
         expect(source.uri.host, 'example.com');
@@ -446,9 +434,7 @@ void main() {
       });
 
       test('should extract extension from name', () {
-        final source = NetworkMediaSource.fromUrl(
-          'https://example.com/video.mp4',
-        );
+        final source = NetworkMediaSource.fromUrl('https://example.com/video.mp4');
 
         expect(source.extension, '.mp4');
       });

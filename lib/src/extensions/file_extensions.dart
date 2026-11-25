@@ -35,8 +35,9 @@ extension FileExtensions on XFile {
   /// On web, detection is done from the bytes; on native platforms it's done
   /// from the file path and/or mime type. [mimeTypeOverride] takes precedence
   /// over the file's own [mimeType] when provided.
-  Future<FileType> getMediaType([String? mimeTypeOverride]) async => kIsWeb
-      // Web-only branch, unreachable in VM tests.
-      ? FileType.fromBytes(await readAsBytes(), mimeTypeOverride ?? mimeType) // coverage:ignore-line
-      : FileType.fromPath(path, mimeTypeOverride ?? mimeType);
+  Future<FileType> getMediaType([String? mimeTypeOverride]) async =>
+      kIsWeb
+          // Web-only branch, unreachable in VM tests.
+          ? FileType.fromBytes(await readAsBytes(), mimeTypeOverride ?? mimeType) // coverage:ignore-line
+          : FileType.fromPath(path, mimeTypeOverride ?? mimeType);
 }

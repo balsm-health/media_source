@@ -40,10 +40,7 @@ abstract class NetworkMediaSource<M extends FileType> extends MediaSource<M> {
     required super.size,
     String? mimeType,
     required super.metadata,
-  }) : super(
-          mimeType: mimeType ?? FileUtil.getMimeTypeFromPath(uri.path),
-          name: name ?? uri.fileName,
-        );
+  }) : super(mimeType: mimeType ?? FileUtil.getMimeTypeFromPath(uri.path), name: name ?? uri.fileName);
 
   /// Creates a [NetworkMediaSource] from a URL string.
   ///
@@ -73,45 +70,18 @@ abstract class NetworkMediaSource<M extends FileType> extends MediaSource<M> {
     // (e.g. '?token=a.b') can't be mistaken for a file extension.
     mediaType ??= FileType.fromPath(uri.path, mimeType);
     if (mediaType.isAny([FileType.audio])) {
-      return AudioNetworkMedia(
-        uri,
-        name: name,
-        size: size,
-        mimeType: mimeType,
-        duration: duration,
-      );
+      return AudioNetworkMedia(uri, name: name, size: size, mimeType: mimeType, duration: duration);
     }
     if (mediaType.isAny([FileType.video])) {
-      return VideoNetworkMedia(
-        uri,
-        name: name,
-        size: size,
-        mimeType: mimeType,
-        duration: duration,
-      );
+      return VideoNetworkMedia(uri, name: name, size: size, mimeType: mimeType, duration: duration);
     }
     if (mediaType.isAny([FileType.image])) {
-      return ImageNetworkMedia(
-        uri,
-        name: name,
-        size: size,
-        mimeType: mimeType,
-      );
+      return ImageNetworkMedia(uri, name: name, size: size, mimeType: mimeType);
     }
     if (mediaType.isAny([FileType.document])) {
-      return DocumentNetworkMedia(
-        uri,
-        name: name,
-        size: size,
-        mimeType: mimeType,
-      );
+      return DocumentNetworkMedia(uri, name: name, size: size, mimeType: mimeType);
     }
-    return UnSupportedNetworkMedia(
-      uri,
-      name: name,
-      size: size,
-      mimeType: mimeType,
-    );
+    return UnSupportedNetworkMedia(uri, name: name, size: size, mimeType: mimeType);
   }
 
   /// Safely creates a [NetworkMediaSource] from a URL string or returns null.
@@ -169,16 +139,8 @@ class VideoNetworkMedia extends NetworkMediaSource<VideoType> {
   /// - [mimeType]: Optional MIME type override
   /// - [name]: Optional custom display name
   /// - [size]: Optional video size
-  VideoNetworkMedia(
-    Uri uri, {
-    Duration? duration,
-    super.mimeType,
-    super.name,
-    super.size,
-  }) : super._(
-          uri: uri,
-          metadata: VideoType(duration),
-        );
+  VideoNetworkMedia(Uri uri, {Duration? duration, super.mimeType, super.name, super.size})
+    : super._(uri: uri, metadata: VideoType(duration));
 
   /// Creates a [VideoNetworkMedia] from a URL string.
   ///
@@ -190,16 +152,8 @@ class VideoNetworkMedia extends NetworkMediaSource<VideoType> {
   /// - [mimeType]: Optional MIME type override
   /// - [name]: Optional custom display name
   /// - [size]: Optional video size
-  VideoNetworkMedia.url(
-    String url, {
-    Duration? duration,
-    super.mimeType,
-    super.name,
-    super.size,
-  }) : super._(
-          uri: Uri.parse(url),
-          metadata: VideoType(duration),
-        );
+  VideoNetworkMedia.url(String url, {Duration? duration, super.mimeType, super.name, super.size})
+    : super._(uri: Uri.parse(url), metadata: VideoType(duration));
 }
 
 /// Represents audio URLs (streaming media).
@@ -215,16 +169,8 @@ class AudioNetworkMedia extends NetworkMediaSource<AudioType> {
   /// - [mimeType]: Optional MIME type override
   /// - [name]: Optional custom display name
   /// - [size]: Optional audio size
-  AudioNetworkMedia(
-    Uri uri, {
-    Duration? duration,
-    super.mimeType,
-    super.name,
-    super.size,
-  }) : super._(
-          uri: uri,
-          metadata: AudioType(duration),
-        );
+  AudioNetworkMedia(Uri uri, {Duration? duration, super.mimeType, super.name, super.size})
+    : super._(uri: uri, metadata: AudioType(duration));
 
   /// Creates an [AudioNetworkMedia] from a URL string.
   ///
@@ -236,16 +182,8 @@ class AudioNetworkMedia extends NetworkMediaSource<AudioType> {
   /// - [mimeType]: Optional MIME type override
   /// - [name]: Optional custom display name
   /// - [size]: Optional audio size
-  AudioNetworkMedia.url(
-    String url, {
-    Duration? duration,
-    super.mimeType,
-    super.name,
-    super.size,
-  }) : super._(
-          uri: Uri.parse(url),
-          metadata: AudioType(duration),
-        );
+  AudioNetworkMedia.url(String url, {Duration? duration, super.mimeType, super.name, super.size})
+    : super._(uri: Uri.parse(url), metadata: AudioType(duration));
 }
 
 /// Represents image URLs.
@@ -259,15 +197,7 @@ class ImageNetworkMedia extends NetworkMediaSource<ImageType> {
   /// - [mimeType]: Optional MIME type override
   /// - [name]: Optional custom display name
   /// - [size]: Optional image size
-  ImageNetworkMedia(
-    Uri uri, {
-    super.mimeType,
-    super.name,
-    super.size,
-  }) : super._(
-          uri: uri,
-          metadata: ImageType(),
-        );
+  ImageNetworkMedia(Uri uri, {super.mimeType, super.name, super.size}) : super._(uri: uri, metadata: ImageType());
 
   /// Creates an [ImageNetworkMedia] from a URL string.
   ///
@@ -278,15 +208,8 @@ class ImageNetworkMedia extends NetworkMediaSource<ImageType> {
   /// - [mimeType]: Optional MIME type override
   /// - [name]: Optional custom display name
   /// - [size]: Optional image size
-  ImageNetworkMedia.url(
-    String url, {
-    super.mimeType,
-    super.name,
-    super.size,
-  }) : super._(
-          uri: Uri.parse(url),
-          metadata: ImageType(),
-        );
+  ImageNetworkMedia.url(String url, {super.mimeType, super.name, super.size})
+    : super._(uri: Uri.parse(url), metadata: ImageType());
 }
 
 /// Represents document URLs.
@@ -301,15 +224,7 @@ class DocumentNetworkMedia extends NetworkMediaSource<DocumentType> {
   /// - [mimeType]: Optional MIME type override
   /// - [name]: Optional custom display name
   /// - [size]: Optional document size
-  DocumentNetworkMedia(
-    Uri uri, {
-    super.mimeType,
-    super.name,
-    super.size,
-  }) : super._(
-          uri: uri,
-          metadata: DocumentType(),
-        );
+  DocumentNetworkMedia(Uri uri, {super.mimeType, super.name, super.size}) : super._(uri: uri, metadata: DocumentType());
 
   /// Creates a [DocumentNetworkMedia] from a URL string.
   ///
@@ -320,15 +235,8 @@ class DocumentNetworkMedia extends NetworkMediaSource<DocumentType> {
   /// - [mimeType]: Optional MIME type override
   /// - [name]: Optional custom display name
   /// - [size]: Optional document size
-  DocumentNetworkMedia.url(
-    String url, {
-    super.mimeType,
-    super.name,
-    super.size,
-  }) : super._(
-          uri: Uri.parse(url),
-          metadata: DocumentType(),
-        );
+  DocumentNetworkMedia.url(String url, {super.mimeType, super.name, super.size})
+    : super._(uri: Uri.parse(url), metadata: DocumentType());
 }
 
 /// Represents URLs for media types that don't fit standard categories.
@@ -342,11 +250,7 @@ class UnSupportedNetworkMedia extends NetworkMediaSource<OtherType> {
   /// - [mimeType]: Optional MIME type override
   /// - [name]: Optional custom display name
   /// - [size]: Optional media size
-  UnSupportedNetworkMedia(Uri uri, {super.mimeType, super.name, super.size})
-      : super._(
-          uri: uri,
-          metadata: OtherType(),
-        );
+  UnSupportedNetworkMedia(Uri uri, {super.mimeType, super.name, super.size}) : super._(uri: uri, metadata: OtherType());
 }
 
 /// Represents a generic URL, separate from media classification.
@@ -362,13 +266,7 @@ class UrlMedia extends NetworkMediaSource<UrlType> {
   ///
   /// Parameters:
   /// - [uri]: The URL as a Uri object
-  UrlMedia(Uri uri)
-      : super._(
-          size: null,
-          mimeType: null,
-          metadata: UrlType(),
-          uri: uri,
-        );
+  UrlMedia(Uri uri) : super._(size: null, mimeType: null, metadata: UrlType(), uri: uri);
 
   /// Creates a [UrlMedia] from a URL string.
   ///

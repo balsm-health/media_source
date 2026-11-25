@@ -58,21 +58,9 @@ void main() {
       final asset = Fixture.sample_video;
       final duration = const Duration(seconds: 60);
 
-      final video1 = await VideoFileMedia.fromPath(
-        asset.file.path,
-        name: 'video.mp4',
-        duration: duration,
-      );
-      final video2 = await VideoFileMedia.fromPath(
-        asset.file.path,
-        name: 'video.mp4',
-        duration: duration,
-      );
-      final video3 = await VideoFileMedia.fromPath(
-        asset.file.path,
-        name: 'other.mp4',
-        duration: duration,
-      );
+      final video1 = await VideoFileMedia.fromPath(asset.file.path, name: 'video.mp4', duration: duration);
+      final video2 = await VideoFileMedia.fromPath(asset.file.path, name: 'video.mp4', duration: duration);
+      final video3 = await VideoFileMedia.fromPath(asset.file.path, name: 'other.mp4', duration: duration);
 
       expect(video1.file.path, video2.file.path);
       expect(video1.name, video2.name);
@@ -131,22 +119,14 @@ void main() {
       final asset = Fixture.sample_audio;
       final duration = asset.duration!;
 
-      final audio1 = await AudioFileMedia.fromPath(
-        asset.file.path,
-        name: 'audio.mp3',
-        duration: duration,
-      );
+      final audio1 = await AudioFileMedia.fromPath(asset.file.path, name: 'audio.mp3', duration: duration);
       final audio2 = await AudioFileMedia.fromPath(
         asset.file.path,
         name: 'audio.mp3',
         duration: duration,
         mimeType: asset.mimeType,
       );
-      final audio3 = await AudioFileMedia.fromPath(
-        asset.file.path,
-        name: 'other.mp3',
-        duration: duration,
-      );
+      final audio3 = await AudioFileMedia.fromPath(asset.file.path, name: 'other.mp3', duration: duration);
 
       expect(audio1.file.path, audio2.file.path);
       expect(audio1.name, audio2.name);

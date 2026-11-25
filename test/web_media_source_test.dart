@@ -16,10 +16,8 @@ import 'package:media_source/src/utils/platform_utils.dart';
 void main() {
   final bytes = Uint8List.fromList(List<int>.generate(64, (i) => i));
 
-  Future<DocumentFileMedia> blobFileMedia() => DocumentFileMedia.fromFile(
-        XFile.fromData(bytes, name: 'doc.pdf', mimeType: 'application/pdf'),
-        name: 'doc.pdf',
-      );
+  Future<DocumentFileMedia> blobFileMedia() =>
+      DocumentFileMedia.fromFile(XFile.fromData(bytes, name: 'doc.pdf', mimeType: 'application/pdf'), name: 'doc.pdf');
 
   group('MemoryMediaSource.saveTo (web)', () {
     test('returns a blob-backed, readable and deletable file', () async {

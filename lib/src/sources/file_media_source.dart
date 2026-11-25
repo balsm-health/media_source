@@ -41,10 +41,7 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
     required String? name,
     required super.size,
     required String? mimeType,
-  }) : super(
-          mimeType: mimeType ?? file.mimeType ?? FileUtil.getMimeTypeFromPath(file.path),
-          name: name ?? file.name,
-        );
+  }) : super(mimeType: mimeType ?? file.mimeType ?? FileUtil.getMimeTypeFromPath(file.path), name: name ?? file.name);
 
   /// Creates a copy of this media source pointing at [file] with [size].
   ///
@@ -73,10 +70,7 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
     final newSize = size ?? await file.size();
     // Web-only branch, unreachable in VM tests.
     if (kIsWeb) return copyWithFile(file, newSize); // coverage:ignore-line
-    return copyWithFile(
-      XFile(path, name: name, mimeType: mimeType, length: newSize.inBytes),
-      newSize,
-    );
+    return copyWithFile(XFile(path, name: name, mimeType: mimeType, length: newSize.inBytes), newSize);
   }
 
   /// Saves this media to a folder, preserving the original filename.
@@ -166,20 +160,14 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
     String? mimeType,
     Duration? duration,
     FileType? mediaType,
-  }) =>
-      fromFile(
-        XFile(
-          path,
-          mimeType: mimeType,
-          length: size?.inBytes,
-          name: name,
-        ),
-        name: name,
-        mimeType: mimeType,
-        duration: duration,
-        mediaType: mediaType,
-        size: size,
-      );
+  }) => fromFile(
+    XFile(path, mimeType: mimeType, length: size?.inBytes, name: name),
+    name: name,
+    mimeType: mimeType,
+    duration: duration,
+    mediaType: mediaType,
+    size: size,
+  );
 
   /// Creates a [FileMediaSource] from an XFile object.
   ///
@@ -210,45 +198,18 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   }) async {
     mediaType ??= await file.getMediaType(mimeType);
     if (mediaType.isAny([FileType.audio])) {
-      return AudioFileMedia.fromFile(
-        file,
-        name: name,
-        duration: duration,
-        mimeType: mimeType,
-        size: size,
-      );
+      return AudioFileMedia.fromFile(file, name: name, duration: duration, mimeType: mimeType, size: size);
     }
     if (mediaType.isAny([FileType.video])) {
-      return VideoFileMedia.fromFile(
-        file,
-        name: name,
-        duration: duration,
-        mimeType: mimeType,
-        size: size,
-      );
+      return VideoFileMedia.fromFile(file, name: name, duration: duration, mimeType: mimeType, size: size);
     }
     if (mediaType.isAny([FileType.image])) {
-      return ImageFileMedia.fromFile(
-        file,
-        name: name,
-        mimeType: mimeType,
-        size: size,
-      );
+      return ImageFileMedia.fromFile(file, name: name, mimeType: mimeType, size: size);
     }
     if (mediaType.isAny([FileType.document])) {
-      return DocumentFileMedia.fromFile(
-        file,
-        name: name,
-        mimeType: mimeType,
-        size: size,
-      );
+      return DocumentFileMedia.fromFile(file, name: name, mimeType: mimeType, size: size);
     }
-    return OtherTypeFileMedia.fromFile(
-      file,
-      name: name,
-      mimeType: mimeType,
-      size: size,
-    );
+    return OtherTypeFileMedia.fromFile(file, name: name, mimeType: mimeType, size: size);
   }
 
   /// Includes the file object in equality comparisons.
@@ -292,19 +253,8 @@ class VideoFileMedia extends FileMediaSource<VideoType> {
     String? mimeType,
     FileSize? size,
   }) async {
-    final file = XFile(
-      path,
-      name: name,
-      mimeType: mimeType,
-      length: size?.inBytes,
-    );
-    return fromFile(
-      file,
-      name: name,
-      duration: duration,
-      mimeType: mimeType,
-      size: size,
-    );
+    final file = XFile(path, name: name, mimeType: mimeType, length: size?.inBytes);
+    return fromFile(file, name: name, duration: duration, mimeType: mimeType, size: size);
   }
 
   /// Creates a [VideoFileMedia] from an XFile object.
@@ -332,21 +282,12 @@ class VideoFileMedia extends FileMediaSource<VideoType> {
   }
 
   @override
-  VideoFileMedia copyWithFile(XFile file, FileSize? size) => VideoFileMedia._(
-        file: file,
-        size: size,
-        name: name,
-        duration: metadata.duration,
-        mimeType: mimeType,
-      );
+  VideoFileMedia copyWithFile(XFile file, FileSize? size) =>
+      VideoFileMedia._(file: file, size: size, name: name, duration: metadata.duration, mimeType: mimeType);
 
   @override
-  VideoMemoryMedia createMemoryMedia(Uint8List bytes) => VideoMemoryMedia(
-        bytes,
-        name: name,
-        duration: metadata.duration,
-        mimeType: mimeType,
-      );
+  VideoMemoryMedia createMemoryMedia(Uint8List bytes) =>
+      VideoMemoryMedia(bytes, name: name, duration: metadata.duration, mimeType: mimeType);
 }
 
 /// Represents audio files stored on the file system.
@@ -385,19 +326,8 @@ class AudioFileMedia extends FileMediaSource<AudioType> {
     String? mimeType,
     FileSize? size,
   }) async {
-    final file = XFile(
-      path,
-      mimeType: mimeType,
-      name: name,
-      length: size?.inBytes,
-    );
-    return fromFile(
-      file,
-      name: name,
-      duration: duration,
-      mimeType: mimeType,
-      size: size,
-    );
+    final file = XFile(path, mimeType: mimeType, name: name, length: size?.inBytes);
+    return fromFile(file, name: name, duration: duration, mimeType: mimeType, size: size);
   }
 
   /// Creates an [AudioFileMedia] from an XFile object.
@@ -425,21 +355,12 @@ class AudioFileMedia extends FileMediaSource<AudioType> {
   }
 
   @override
-  AudioFileMedia copyWithFile(XFile file, FileSize? size) => AudioFileMedia._(
-        file: file,
-        size: size,
-        name: name,
-        duration: metadata.duration,
-        mimeType: mimeType,
-      );
+  AudioFileMedia copyWithFile(XFile file, FileSize? size) =>
+      AudioFileMedia._(file: file, size: size, name: name, duration: metadata.duration, mimeType: mimeType);
 
   @override
-  AudioMemoryMedia createMemoryMedia(Uint8List bytes) => AudioMemoryMedia(
-        bytes,
-        name: name,
-        duration: metadata.duration,
-        mimeType: mimeType,
-      );
+  AudioMemoryMedia createMemoryMedia(Uint8List bytes) =>
+      AudioMemoryMedia(bytes, name: name, duration: metadata.duration, mimeType: mimeType);
 }
 
 /// Represents image files stored on the file system.
@@ -454,12 +375,8 @@ class ImageFileMedia extends FileMediaSource<ImageType> {
   /// - [name]: Display name
   /// - [size]: File size
   /// - [mimeType]: MIME type of the image
-  ImageFileMedia._({
-    required super.file,
-    required super.name,
-    required super.size,
-    required super.mimeType,
-  }) : super._(metadata: ImageType());
+  ImageFileMedia._({required super.file, required super.name, required super.size, required super.mimeType})
+    : super._(metadata: ImageType());
 
   /// Creates an [ImageFileMedia] from a file path.
   ///
@@ -468,24 +385,9 @@ class ImageFileMedia extends FileMediaSource<ImageType> {
   /// - [name]: Optional custom display name
   /// - [mimeType]: Optional MIME type override
   /// - [size]: Optional pre-computed file size
-  static Future<ImageFileMedia> fromPath(
-    String path, {
-    String? name,
-    String? mimeType,
-    FileSize? size,
-  }) async {
-    final file = XFile(
-      path,
-      name: name,
-      mimeType: mimeType,
-      length: size?.inBytes,
-    );
-    return fromFile(
-      file,
-      name: name,
-      mimeType: mimeType,
-      size: size,
-    );
+  static Future<ImageFileMedia> fromPath(String path, {String? name, String? mimeType, FileSize? size}) async {
+    final file = XFile(path, name: name, mimeType: mimeType, length: size?.inBytes);
+    return fromFile(file, name: name, mimeType: mimeType, size: size);
   }
 
   /// Creates an [ImageFileMedia] from an XFile object.
@@ -495,34 +397,16 @@ class ImageFileMedia extends FileMediaSource<ImageType> {
   /// - [name]: Optional custom display name
   /// - [mimeType]: Optional MIME type override
   /// - [size]: Optional pre-computed file size, auto-detected if not provided
-  static Future<ImageFileMedia> fromFile(
-    XFile file, {
-    String? name,
-    String? mimeType,
-    FileSize? size,
-  }) async {
-    return ImageFileMedia._(
-      file: file,
-      size: size ?? await file.size(),
-      name: name,
-      mimeType: mimeType,
-    );
+  static Future<ImageFileMedia> fromFile(XFile file, {String? name, String? mimeType, FileSize? size}) async {
+    return ImageFileMedia._(file: file, size: size ?? await file.size(), name: name, mimeType: mimeType);
   }
 
   @override
-  ImageFileMedia copyWithFile(XFile file, FileSize? size) => ImageFileMedia._(
-        file: file,
-        size: size,
-        name: name,
-        mimeType: mimeType,
-      );
+  ImageFileMedia copyWithFile(XFile file, FileSize? size) =>
+      ImageFileMedia._(file: file, size: size, name: name, mimeType: mimeType);
 
   @override
-  ImageMemoryMedia createMemoryMedia(Uint8List bytes) => ImageMemoryMedia(
-        bytes,
-        name: name,
-        mimeType: mimeType,
-      );
+  ImageMemoryMedia createMemoryMedia(Uint8List bytes) => ImageMemoryMedia(bytes, name: name, mimeType: mimeType);
 }
 
 /// Represents document files stored on the file system.
@@ -537,12 +421,8 @@ class DocumentFileMedia extends FileMediaSource<DocumentType> {
   /// - [name]: Display name
   /// - [size]: File size
   /// - [mimeType]: MIME type of the document
-  DocumentFileMedia._({
-    required super.file,
-    required super.name,
-    required super.size,
-    required super.mimeType,
-  }) : super._(metadata: DocumentType());
+  DocumentFileMedia._({required super.file, required super.name, required super.size, required super.mimeType})
+    : super._(metadata: DocumentType());
 
   /// Creates a [DocumentFileMedia] from a file path.
   ///
@@ -551,24 +431,9 @@ class DocumentFileMedia extends FileMediaSource<DocumentType> {
   /// - [name]: Optional custom display name
   /// - [mimeType]: Optional MIME type override
   /// - [size]: Optional pre-computed file size
-  static Future<DocumentFileMedia> fromPath(
-    String path, {
-    String? name,
-    String? mimeType,
-    FileSize? size,
-  }) async {
-    final file = XFile(
-      path,
-      name: name,
-      mimeType: mimeType,
-      length: size?.inBytes,
-    );
-    return fromFile(
-      file,
-      name: name,
-      mimeType: mimeType,
-      size: size,
-    );
+  static Future<DocumentFileMedia> fromPath(String path, {String? name, String? mimeType, FileSize? size}) async {
+    final file = XFile(path, name: name, mimeType: mimeType, length: size?.inBytes);
+    return fromFile(file, name: name, mimeType: mimeType, size: size);
   }
 
   /// Creates a [DocumentFileMedia] from an XFile object.
@@ -578,34 +443,16 @@ class DocumentFileMedia extends FileMediaSource<DocumentType> {
   /// - [name]: Optional custom display name
   /// - [mimeType]: Optional MIME type override
   /// - [size]: Optional pre-computed file size, auto-detected if not provided
-  static Future<DocumentFileMedia> fromFile(
-    XFile file, {
-    String? name,
-    String? mimeType,
-    FileSize? size,
-  }) async {
-    return DocumentFileMedia._(
-      file: file,
-      size: size ?? await file.size(),
-      name: name,
-      mimeType: mimeType,
-    );
+  static Future<DocumentFileMedia> fromFile(XFile file, {String? name, String? mimeType, FileSize? size}) async {
+    return DocumentFileMedia._(file: file, size: size ?? await file.size(), name: name, mimeType: mimeType);
   }
 
   @override
-  DocumentFileMedia copyWithFile(XFile file, FileSize? size) => DocumentFileMedia._(
-        file: file,
-        size: size,
-        name: name,
-        mimeType: mimeType,
-      );
+  DocumentFileMedia copyWithFile(XFile file, FileSize? size) =>
+      DocumentFileMedia._(file: file, size: size, name: name, mimeType: mimeType);
 
   @override
-  DocumentMemoryMedia createMemoryMedia(Uint8List bytes) => DocumentMemoryMedia(
-        bytes,
-        name: name,
-        mimeType: mimeType,
-      );
+  DocumentMemoryMedia createMemoryMedia(Uint8List bytes) => DocumentMemoryMedia(bytes, name: name, mimeType: mimeType);
 }
 
 /// Represents files of unclassified or unknown types.
@@ -621,12 +468,8 @@ class OtherTypeFileMedia extends FileMediaSource<OtherType> {
   /// - [name]: Display name
   /// - [size]: File size
   /// - [mimeType]: MIME type of the file
-  OtherTypeFileMedia._({
-    required super.file,
-    required super.name,
-    required super.size,
-    required super.mimeType,
-  }) : super._(metadata: OtherType());
+  OtherTypeFileMedia._({required super.file, required super.name, required super.size, required super.mimeType})
+    : super._(metadata: OtherType());
 
   /// Creates an [OtherTypeFileMedia] from a file path.
   ///
@@ -635,24 +478,9 @@ class OtherTypeFileMedia extends FileMediaSource<OtherType> {
   /// - [name]: Optional custom display name
   /// - [mimeType]: Optional MIME type override
   /// - [size]: Optional pre-computed file size
-  static Future<OtherTypeFileMedia> fromPath(
-    String path, {
-    String? name,
-    String? mimeType,
-    FileSize? size,
-  }) {
-    final file = XFile(
-      path,
-      name: name,
-      mimeType: mimeType,
-      length: size?.inBytes,
-    );
-    return fromFile(
-      file,
-      name: name,
-      mimeType: mimeType,
-      size: size,
-    );
+  static Future<OtherTypeFileMedia> fromPath(String path, {String? name, String? mimeType, FileSize? size}) {
+    final file = XFile(path, name: name, mimeType: mimeType, length: size?.inBytes);
+    return fromFile(file, name: name, mimeType: mimeType, size: size);
   }
 
   /// Creates an [OtherTypeFileMedia] from an XFile object.
@@ -662,32 +490,15 @@ class OtherTypeFileMedia extends FileMediaSource<OtherType> {
   /// - [name]: Optional custom display name
   /// - [mimeType]: Optional MIME type override
   /// - [size]: Optional pre-computed file size, auto-detected if not provided
-  static Future<OtherTypeFileMedia> fromFile(
-    XFile file, {
-    String? name,
-    String? mimeType,
-    FileSize? size,
-  }) async {
-    return OtherTypeFileMedia._(
-      file: file,
-      size: size ?? await file.size(),
-      name: name,
-      mimeType: mimeType,
-    );
+  static Future<OtherTypeFileMedia> fromFile(XFile file, {String? name, String? mimeType, FileSize? size}) async {
+    return OtherTypeFileMedia._(file: file, size: size ?? await file.size(), name: name, mimeType: mimeType);
   }
 
   @override
-  OtherTypeFileMedia copyWithFile(XFile file, FileSize? size) => OtherTypeFileMedia._(
-        file: file,
-        size: size,
-        name: name,
-        mimeType: mimeType,
-      );
+  OtherTypeFileMedia copyWithFile(XFile file, FileSize? size) =>
+      OtherTypeFileMedia._(file: file, size: size, name: name, mimeType: mimeType);
 
   @override
-  OtherTypeMemoryMedia createMemoryMedia(Uint8List bytes) => OtherTypeMemoryMedia(
-        bytes,
-        name: name,
-        mimeType: mimeType,
-      );
+  OtherTypeMemoryMedia createMemoryMedia(Uint8List bytes) =>
+      OtherTypeMemoryMedia(bytes, name: name, mimeType: mimeType);
 }

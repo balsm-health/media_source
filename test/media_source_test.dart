@@ -50,15 +50,9 @@ void main() {
       test('should call file callback for FileMediaSource', () async {
         // Note: Creating FileMediaSource requires actual file operations
         // This test demonstrates the pattern with NetworkMediaSource instead
-        final source = NetworkMediaSource.fromUrl(
-          'https://example.com/video.mp4',
-          mediaType: FileType.video,
-        );
+        final source = NetworkMediaSource.fromUrl('https://example.com/video.mp4', mediaType: FileType.video);
 
-        final result = source.fold(
-          network: (network) => 'network',
-          orElse: () => 'other',
-        );
+        final result = source.fold(network: (network) => 'network', orElse: () => 'other');
 
         expect(result, 'network');
       });
@@ -67,10 +61,7 @@ void main() {
         final asset = Fixture.sample_video;
         final source = await VideoFileMedia.fromPath(asset.file.path);
 
-        final result = source.fold(
-          file: (file) => 'file',
-          orElse: () => 'other',
-        );
+        final result = source.fold(file: (file) => 'file', orElse: () => 'other');
 
         expect(result, 'file');
       });
@@ -79,40 +70,24 @@ void main() {
         final bytes = Uint8List.fromList([0, 1, 2, 3]);
         final source = ImageMemoryMedia(bytes, name: 'image.png');
 
-        final result = source.fold(
-          memory: (memory) => 'memory',
-          orElse: () => 'other',
-        );
+        final result = source.fold(memory: (memory) => 'memory', orElse: () => 'other');
 
         expect(result, 'memory');
       });
 
       test('should call network callback for NetworkMediaSource', () {
-        final source = NetworkMediaSource.fromUrl(
-          'https://example.com/image.png',
-          mediaType: FileType.image,
-        );
+        final source = NetworkMediaSource.fromUrl('https://example.com/image.png', mediaType: FileType.image);
 
-        final result = source.fold(
-          network: (network) => 'network',
-          orElse: () => 'other',
-        );
+        final result = source.fold(network: (network) => 'network', orElse: () => 'other');
 
         expect(result, 'network');
       });
 
       test('should call network callback for AssetMediaSource', () async {
         final asset = Fixture.sample_image;
-        final source = await ImageAssetMedia.load(
-          asset.file.path,
-          bundle: TestFileAssetBundle(),
-          size: asset.size,
-        );
+        final source = await ImageAssetMedia.load(asset.file.path, bundle: TestFileAssetBundle(), size: asset.size);
 
-        final result = source.fold(
-          asset: (asset) => 'asset',
-          orElse: () => 'other',
-        );
+        final result = source.fold(asset: (asset) => 'asset', orElse: () => 'other');
 
         expect(result, 'asset');
       });
@@ -121,11 +96,7 @@ void main() {
         final bytes = Uint8List.fromList([0, 1, 2, 3]);
         final source = ImageMemoryMedia(bytes, name: 'image.png');
 
-        final result = source.fold(
-          file: (file) => 'file',
-          network: (network) => 'network',
-          orElse: () => 'other',
-        );
+        final result = source.fold(file: (file) => 'file', network: (network) => 'network', orElse: () => 'other');
 
         expect(result, 'other');
       });
@@ -134,10 +105,7 @@ void main() {
         final bytes = Uint8List.fromList([0, 1, 2, 3]);
         final source = VideoMemoryMedia(bytes, name: 'video.mp4');
 
-        final result = source.fold<String>(
-          memory: (memory) => memory.name,
-          orElse: () => 'unknown',
-        );
+        final result = source.fold<String>(memory: (memory) => memory.name, orElse: () => 'unknown');
 
         expect(result, 'video.mp4');
       });
@@ -146,15 +114,9 @@ void main() {
         final bytes = Uint8List.fromList([0, 1, 2, 3]);
         final source = ImageMemoryMedia(bytes, name: 'image.png');
 
-        final intResult = source.fold<int>(
-          memory: (memory) => 42,
-          orElse: () => 0,
-        );
+        final intResult = source.fold<int>(memory: (memory) => 42, orElse: () => 0);
 
-        final boolResult = source.fold<bool>(
-          memory: (memory) => true,
-          orElse: () => false,
-        );
+        final boolResult = source.fold<bool>(memory: (memory) => true, orElse: () => false);
 
         expect(intResult, 42);
         expect(boolResult, isTrue);

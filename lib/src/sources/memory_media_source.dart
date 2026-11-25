@@ -34,15 +34,8 @@ abstract class MemoryMediaSource<M extends FileType> extends MediaSource<M> impl
   /// - [name]: Display name
   /// - [metadata]: Type-specific metadata (VideoType, AudioType, etc.)
   /// - [mimeType]: Optional MIME type, auto-detected from bytes if not provided
-  MemoryMediaSource._(
-    this.bytes, {
-    required super.name,
-    required super.metadata,
-    String? mimeType,
-  }) : super(
-          mimeType: mimeType ?? FileUtil.getMimeTypeFromBytes(bytes),
-          size: bytes.lengthInBytes.b,
-        );
+  MemoryMediaSource._(this.bytes, {required super.name, required super.metadata, String? mimeType})
+    : super(mimeType: mimeType ?? FileUtil.getMimeTypeFromBytes(bytes), size: bytes.lengthInBytes.b);
 
   /// Uses the byte length (not the content) in Equatable props.
   ///
@@ -134,21 +127,12 @@ class VideoMemoryMedia extends MemoryMediaSource<VideoType> {
   /// - [name]: Display name of the video
   /// - [duration]: Optional video duration
   /// - [mimeType]: Optional MIME type override
-  VideoMemoryMedia(
-    super.bytes, {
-    required super.name,
-    Duration? duration,
-    super.mimeType,
-  }) : super._(metadata: VideoType(duration));
+  VideoMemoryMedia(super.bytes, {required super.name, Duration? duration, super.mimeType})
+    : super._(metadata: VideoType(duration));
 
   @override
-  Future<VideoFileMedia> createFileMedia(XFile file) => VideoFileMedia.fromFile(
-        file,
-        duration: metadata.duration,
-        mimeType: mimeType,
-        name: name,
-        size: size,
-      );
+  Future<VideoFileMedia> createFileMedia(XFile file) =>
+      VideoFileMedia.fromFile(file, duration: metadata.duration, mimeType: mimeType, name: name, size: size);
 }
 
 /// Represents audio data stored in memory.
@@ -163,21 +147,12 @@ class AudioMemoryMedia extends MemoryMediaSource<AudioType> {
   /// - [name]: Display name of the audio
   /// - [duration]: Optional audio duration
   /// - [mimeType]: Optional MIME type override
-  AudioMemoryMedia(
-    super.bytes, {
-    required super.name,
-    Duration? duration,
-    super.mimeType,
-  }) : super._(metadata: AudioType(duration));
+  AudioMemoryMedia(super.bytes, {required super.name, Duration? duration, super.mimeType})
+    : super._(metadata: AudioType(duration));
 
   @override
-  Future<AudioFileMedia> createFileMedia(XFile file) => AudioFileMedia.fromFile(
-        file,
-        duration: metadata.duration,
-        mimeType: mimeType,
-        name: name,
-        size: size,
-      );
+  Future<AudioFileMedia> createFileMedia(XFile file) =>
+      AudioFileMedia.fromFile(file, duration: metadata.duration, mimeType: mimeType, name: name, size: size);
 }
 
 /// Represents image data stored in memory.
@@ -190,19 +165,11 @@ class ImageMemoryMedia extends MemoryMediaSource<ImageType> {
   /// - [bytes]: The image data as a byte array
   /// - [name]: Display name of the image
   /// - [mimeType]: Optional MIME type override
-  ImageMemoryMedia(
-    super.bytes, {
-    required super.name,
-    super.mimeType,
-  }) : super._(metadata: ImageType());
+  ImageMemoryMedia(super.bytes, {required super.name, super.mimeType}) : super._(metadata: ImageType());
 
   @override
-  Future<ImageFileMedia> createFileMedia(XFile file) => ImageFileMedia.fromFile(
-        file,
-        mimeType: mimeType,
-        name: name,
-        size: size,
-      );
+  Future<ImageFileMedia> createFileMedia(XFile file) =>
+      ImageFileMedia.fromFile(file, mimeType: mimeType, name: name, size: size);
 }
 
 /// Represents document data stored in memory.
@@ -216,19 +183,11 @@ class DocumentMemoryMedia extends MemoryMediaSource<DocumentType> {
   /// - [bytes]: The document data as a byte array
   /// - [name]: Display name of the document
   /// - [mimeType]: Optional MIME type override
-  DocumentMemoryMedia(
-    super.bytes, {
-    required super.name,
-    super.mimeType,
-  }) : super._(metadata: DocumentType());
+  DocumentMemoryMedia(super.bytes, {required super.name, super.mimeType}) : super._(metadata: DocumentType());
 
   @override
-  Future<DocumentFileMedia> createFileMedia(XFile file) => DocumentFileMedia.fromFile(
-        file,
-        mimeType: mimeType,
-        name: name,
-        size: size,
-      );
+  Future<DocumentFileMedia> createFileMedia(XFile file) =>
+      DocumentFileMedia.fromFile(file, mimeType: mimeType, name: name, size: size);
 }
 
 /// Represents unclassified or unknown data stored in memory.
@@ -243,17 +202,9 @@ class OtherTypeMemoryMedia extends MemoryMediaSource<OtherType> {
   /// - [bytes]: The media data as a byte array
   /// - [name]: Display name of the media
   /// - [mimeType]: Optional MIME type override
-  OtherTypeMemoryMedia(
-    super.bytes, {
-    required super.name,
-    super.mimeType,
-  }) : super._(metadata: OtherType());
+  OtherTypeMemoryMedia(super.bytes, {required super.name, super.mimeType}) : super._(metadata: OtherType());
 
   @override
-  Future<OtherTypeFileMedia> createFileMedia(XFile file) => OtherTypeFileMedia.fromFile(
-        file,
-        mimeType: mimeType,
-        name: name,
-        size: size,
-      );
+  Future<OtherTypeFileMedia> createFileMedia(XFile file) =>
+      OtherTypeFileMedia.fromFile(file, mimeType: mimeType, name: name, size: size);
 }
