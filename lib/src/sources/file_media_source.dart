@@ -87,6 +87,11 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   /// copy + delete otherwise. An existing file at the destination is
   /// replaced. Returns early if the source path matches the destination.
   ///
+  /// The rename moves the file on disk at `file.path`. An `XFile.fromData`
+  /// that also names an existing file (e.g. edited bytes returned with the
+  /// original path) would move the on-disk file, not its bytes; use [saveTo]
+  /// for such sources.
+  ///
   /// Throws a [StateError] on native platforms when the fallback copy
   /// succeeds but the original on-disk file cannot be deleted (both files
   /// exist at that point). A source with no file on disk (e.g. created with

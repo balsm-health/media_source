@@ -53,11 +53,28 @@ void main() {
       expect(await PlatformUtils.instance.moveFile('$dir/missing.bin', '$dir/b.bin'), isFalse);
     });
 
+    test('creates a missing destination folder instead of falling back to copy', () async {
+      await File('$dir/a.bin').writeAsBytes([1, 2]);
+
+      expect(await PlatformUtils.instance.moveFile('$dir/a.bin', '$dir/new/sub/b.bin'), isTrue);
+      expect(File('$dir/a.bin').existsSync(), isFalse);
+      expect(File('$dir/new/sub/b.bin').readAsBytesSync(), [1, 2]);
+    });
+
     test('returns false instead of throwing when the rename fails', () async {
       await File('$dir/a.bin').writeAsBytes([1]);
-      // Destination directory doesn't exist, so the rename fails.
-      expect(await PlatformUtils.instance.moveFile('$dir/a.bin', '$dir/no/such/dir/b.bin'), isFalse);
+      // The destination is an existing directory, so the rename fails.
+      await Directory('$dir/taken').create();
+      expect(await PlatformUtils.instance.moveFile('$dir/a.bin', '$dir/taken'), isFalse);
       expect(File('$dir/a.bin').existsSync(), isTrue);
     });
+
+    test('returns false for a symbolic link so the caller copies its target', () async {
+      await File('$dir/target.bin').writeAsBytes([7]);
+      await Link('$dir/link.bin').create('target.bin');
+
+      expect(await PlatformUtils.instance.moveFile('$dir/link.bin', '$dir/out/b.bin'), isFalse);
+      expect(Link('$dir/link.bin').existsSync(), isTrue);
+    }, skip: Platform.isWindows ? 'Creating symbolic links needs extra privileges on Windows' : false);
   });
 }

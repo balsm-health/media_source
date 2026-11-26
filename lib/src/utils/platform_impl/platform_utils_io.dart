@@ -34,13 +34,20 @@ class PlatformUtilsFacadeImpl extends PlatformUtilsFacade {
     }
   }
 
-  /// Moves the file with [File.rename]; falls back to `false` when renaming
-  /// fails (e.g. cross-device moves) so callers can copy + delete instead.
+  /// Moves the file with [File.rename], creating the destination's parent
+  /// directory first. Returns `false` when renaming fails (e.g. cross-device
+  /// moves) so callers can copy + delete instead.
+  ///
+  /// Symbolic links also return `false`: rename would move the link itself,
+  /// and a relative link would then point somewhere else, while copy reads
+  /// the target's content.
   @override
   Future<bool> moveFile(String sourcePath, String destinationPath) async {
     try {
       final source = File(sourcePath);
       if (sourcePath.isEmpty || !await source.exists()) return false;
+      if (await FileSystemEntity.isLink(sourcePath)) return false;
+      await ensureParentDirectoryExists(destinationPath);
       await source.rename(destinationPath);
       return true;
     } catch (e) {

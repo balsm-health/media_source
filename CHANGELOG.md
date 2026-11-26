@@ -70,7 +70,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Future<FileMediaSource<M>>` instead of the concrete subtype (e.g. `Future<VideoFileMedia>`).
   The runtime object is unchanged; only explicitly-typed assignments need updating. The typed
   metadata survives via the generic (`FileMediaSource<VideoType>.metadata.duration` still works)
-- `FileMediaSource.moveTo` uses a fast platform rename when possible instead of copy + delete
+- `FileMediaSource.moveTo` uses a fast platform rename when possible instead of copy + delete.
+  The destination folder is created first, so moving into a new folder still renames. Symbolic
+  links are still copied (the link's target content), since renaming would move the link itself.
+  The rename moves the file on disk, so for an `XFile.fromData` that also names an existing file
+  (edited bytes returned with the original path), use `saveTo` to write the bytes
 - On web, `saveTo` and `moveTo` return a source backed by the original blob instead of a
   pointer to the download path, which a browser cannot read back. `moveTo` no longer
   revokes the original on web. See "Web notes" in the README
