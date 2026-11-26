@@ -90,7 +90,9 @@ class PlatformUtilsFacadeImpl extends PlatformUtilsFacade {
   /// `false`, even if the [XFile] caches bytes (use `XFile.fromData` for
   /// in-memory data). Each request times out after [fetchTimeout] and then
   /// reports `false`. Only when the request itself fails (e.g. network or
-  /// CORS error) does this fall back to reading the bytes.
+  /// CORS error) does this fall back to reading the bytes, again within
+  /// [fetchTimeout]. A response of 416 to the ranged `GET` means an empty
+  /// object that exists.
   @override
   Future<bool> fileExists(XFile xFile) async {
     final path = xFile.path;
@@ -98,7 +100,8 @@ class PlatformUtilsFacadeImpl extends PlatformUtilsFacade {
     final reachable = await _isReachable(path);
     if (reachable != null) return reachable;
     try {
-      await xFile.readAsBytes();
+      // Bounded like the probes, so a failing server can't keep this waiting.
+      await xFile.readAsBytes().timeout(fetchTimeout);
       return true;
     } catch (e) {
       return false;
@@ -143,6 +146,8 @@ class PlatformUtilsFacadeImpl extends PlatformUtilsFacade {
 
   Future<bool> _probe(String url, String method, {bool rangeFirstByte = false}) async {
     final status = await _status(url, method, rangeFirstByte: rangeFirstByte);
+    // 416: the resource exists but is empty, so no first byte is satisfiable.
+    if (rangeFirstByte && status == 416) return true;
     return status >= 200 && status < 300;
   }
 }

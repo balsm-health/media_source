@@ -114,6 +114,11 @@ void main() {
       });
     }
 
+    test('treats 416 on the ranged GET as an existing empty object', () async {
+      statuses = [403, 416];
+      expect(await exists(), isTrue);
+    });
+
     test('reports false when the ranged GET is also refused', () async {
       statuses = [403, 403];
       expect(await exists(), isFalse);

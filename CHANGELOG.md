@@ -39,7 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a revoked blob URL or a 404 now reports `false` (previously the cached bytes, or the 404
   page body, made it look alive). An `XFile(path, bytes: ...)` with a non-addressable path now
   reports `false`; use `XFile.fromData` for in-memory data. Servers that reject `HEAD`
-  (403/405/501, e.g. S3/GCS presigned URLs) get a one-byte ranged `GET` instead, and each
+  (403/405/501, e.g. S3/GCS presigned URLs) get a one-byte ranged `GET` instead (a `416` reply
+  there means an existing empty object), and each
   request times out after 10 seconds rather than hanging
 - `FileMediaSource.moveTo` on a source with no file on disk (e.g. `XFile.fromData` from a picker)
   no longer writes the destination and then throws `StateError`
