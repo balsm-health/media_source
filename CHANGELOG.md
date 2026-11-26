@@ -49,8 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ImageAssetMedia.load` when the size should be read from the asset bundle. The other asset
   media types remain constructible only through `load()`
 - **BREAKING**: `FileMediaSource` and `MemoryMediaSource` gained abstract template hooks
-  (`copyWithFile`, `createMemoryMedia`, `createFileMedia`). External subclasses must implement
-  them; existing `saveTo` overrides keep working unchanged
+  (`copyWithFile`, `createMemoryMedia`, `createFileMedia`). Classes that `implements` either
+  type must add them. The base classes can't be extended outside the package (their
+  constructors are private), and subclasses of the concrete memory types inherit the hooks
 - **BREAKING**: minimum SDK is now Dart 3.7 / Flutter 3.29, required by `cross_file` 0.3.5, which
   fixes `XFile.fromData` ignoring its bytes on web when a path is set
 - **BREAKING**: `PlatformUtilsFacade.createDirectoryIfNotExists` is deprecated in favor of
@@ -84,6 +85,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `PlatformUtilsFacade.moveFile` for fast native file renames
 - Lint enforcement via `flutter_lints` (previously no lint ruleset was included)
+
+### Documentation
+- README type detection uses `FileType` from `file_type_plus` (not re-exported; add it as a
+  dependency to use it directly). The `MediaType.fromPath`/`fromBytes` API it described doesn't
+  exist
+- README API reference lists the real constructors and factories for every source, `UrlMedia`'s
+  null size and path-detected MIME type, and `load()` as the way to create asset media
+- Removed the README section on `XFile` extension methods; those extensions are internal and
+  not exported
+- Fixed README examples that didn't compile: `async` callbacks inside `fold<String>`, awaiting
+  the synchronous `FileType.fromPath`, `is VideoType` checks on a `FileType`, and a custom
+  source calling `MemoryMediaSource`'s private constructor (it now extends `MediaSource`)
+- Documented that a `ThumbnailMediaSource` matches only the `thumbnail` branch of `fold`; fold
+  its `original` to handle the wrapped source
 
 ### Dependencies
 - `file_type_plus` `^1.0.0` → `^1.1.0`: picks up detection fixes (extension
