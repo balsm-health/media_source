@@ -18,3 +18,22 @@ coverage/
 # Never publish local secrets.
 .env
 .env.*
+# Generated docs, web build output and editor/OS leftovers.
+doc/api/
+*.dart.js
+*.info.json
+*.js
+*.js_
+*.js.deps
+*.js.map
+*.swp
+*.tmp
+*~
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+flutter_*.png
+.analysis_options_individual
+*.ipr
+*.iws
