@@ -61,8 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fixes `XFile.fromData` ignoring its bytes on web when a path is set
 - **BREAKING**: `PlatformUtilsFacade.createDirectoryIfNotExists` is deprecated in favor of
   `ensureParentDirectoryExists`, which describes the actual behavior (the method always created
-  the *parent* directory of the given path). Custom facade implementations must implement the
-  new methods (`ensureParentDirectoryExists`, `moveFile`)
+  the *parent* directory of the given path). Classes that implement `PlatformUtilsFacade`
+  (e.g. test fakes) must add the new methods (`ensureParentDirectoryExists`, `moveFile`)
 - **BREAKING**: `UrlMedia` no longer reports a fake `0 B` size or the invalid `'url'` MIME type;
   size is now null and the MIME type is detected from the URL path when possible
 - **BREAKING**: `FileMediaSource.moveTo` now throws a `StateError` on native platforms when the

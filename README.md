@@ -851,11 +851,14 @@ class SmartMediaFactory {
 Browsers have no writable file system, so on web:
 
 - `saveTo` / `saveToFolder` trigger a browser download. The path only names the
-  download; it is not readable afterwards. The returned `FileMediaSource` is backed
-  by the original data (a blob URL), so it stays readable and deletable.
+  download; it is not readable afterwards. The returned `FileMediaSource` reads from
+  the original data instead: a new blob URL for memory and asset sources, or the same
+  `XFile` for file sources.
 - `moveTo` / `moveToFolder` download the file and keep the original in place, because
   the returned source still reads from it.
-- `delete` revokes blob URLs; other paths cannot be deleted and return `false`.
+- `delete` revokes blob URLs; other paths cannot be deleted and return `false`. A file
+  source and the source returned by its `saveTo` / `moveTo` share one blob URL, so
+  deleting either one makes both unreadable.
 - Directory operations are no-ops.
 
 ## Additional information

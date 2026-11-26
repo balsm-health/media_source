@@ -16,7 +16,7 @@ A type-safe, cross-platform Flutter package that unifies media handling from fil
 Five main source implementations in [lib/src/sources/](../lib/src/sources/):
 1. **FileMediaSource** - Cross-platform file handling via `cross_file`
 2. **MemoryMediaSource** - In-memory byte data (`Uint8List`)
-3. **NetworkMediaSource** - Remote URLs with optional caching
+3. **NetworkMediaSource** - Remote URLs (URI and metadata only; no download or caching)
 4. **AssetMediaSource** - Flutter asset bundle integration (read-only)
 5. **ThumbnailMediaSource** - Wrapper pairing high-quality media with previews
 
@@ -29,7 +29,7 @@ Five main source implementations in [lib/src/sources/](../lib/src/sources/):
 ### Conversion Mixins
 - `ToMemoryConvertableMedia<M>` - Convert to in-memory representation
 - `ToFileConvertableMedia<M>` - Convert to file-based representation
-- Enables seamless source transformations (e.g., `NetworkMediaSource` → `FileMediaSource`)
+- Enables source transformations: memory/asset → file (`saveTo`), file/asset → memory (`convertToMemory`). Network sources don't convert; download the bytes yourself first
 
 ## Development Workflows
 
@@ -61,8 +61,10 @@ dart analyze
 # Format code (optional)
 dart format lib test
 
-# Run example
-dart run example/main.dart
+# Check the example compiles. It imports Flutter (asset sources use
+# flutter/services), so `dart run` can't execute it; call its functions
+# from a Flutter app to run them.
+flutter analyze example
 ```
 
 ### Publishing to pub.dev
@@ -108,13 +110,13 @@ dart pub publish
 ### Creating Source Conversions
 ```dart
 // Memory to File
-final fileMedia = await memoryMedia.toFile('/path/to/save.mp4');
+final fileMedia = await memoryMedia.saveTo('/path/to/save.mp4');
 
 // Asset to Memory
-final memoryMedia = await assetMedia.toMemory();
+final memoryMedia = await assetMedia.convertToMemory();
 
-// Network to File (with download)
-final fileMedia = await networkMedia.toFile('/cache/video.mp4');
+// Network sources hold only a URI: download the bytes yourself, then
+// wrap them, e.g. VideoMemoryMedia(bytes, name: 'video.mp4').saveTo(path)
 ```
 
 ### Pattern Matching Best Practices
@@ -174,8 +176,7 @@ Tests organized by source type in `test/`:
 
 ### Lazy Loading
 - Size hints prevent unnecessary data loading
-- `toMemory()` only loads when bytes are needed
-- Network sources support streaming (implementation-dependent)
+- `convertToMemory()` only loads when bytes are needed
 
 ### Cross-Platform File Handling
 - Unified API across web, mobile, desktop via `cross_file`
