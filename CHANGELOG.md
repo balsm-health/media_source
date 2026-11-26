@@ -10,8 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - `saveToFolder` and `moveToFolder` now use only the base name of `name`, so an absolute or
   `../` name (for example one derived from an untrusted URL) can no longer write outside the
-  target folder. A name with no usable base name (empty, `.`, `..`, trailing separator) throws
-  an `ArgumentError`
+  target folder. A name with no usable base name (empty, `.`, `..`, trailing separator, NUL
+  character) throws an `ArgumentError`
+- On Windows, those methods also reject names Windows can't store as a plain file: reserved
+  characters (including `:`, which would write into an NTFS alternate data stream and leave the
+  visible file empty), control characters, device names (`CON`, `NUL.txt`, `COM1`, ...), and
+  names ending in a dot or space
 
 ### Fixed
 - `XFile.getMediaType` now honors the provided MIME type override; previously the parameter was

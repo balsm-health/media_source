@@ -8,6 +8,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_source/media_source.dart';
 import 'package:media_source/src/extensions/uri_extensions.dart';
+import 'package:media_source/src/utils/file_name.dart';
 import 'package:path/path.dart' as p;
 
 const tempDir = 'test/assets/file_name_safety';
@@ -35,6 +36,42 @@ void main() {
     test('does not throw on invalid UTF-8 percent-encoding', () {
       expect(Uri.parse('https://x/%C3%28.mp4').fileName, '%C3%28.mp4');
       expect(() => VideoNetworkMedia(Uri.parse('https://x/%C3%28.mp4')), returnsNormally);
+    });
+  });
+
+  group('joinSafeFileName', () {
+    final windows = p.Context(style: p.Style.windows);
+    final posix = p.Context(style: p.Style.posix);
+
+    for (final bad in [
+      'report.pdf:hidden',
+      'CON',
+      'nul.txt',
+      'COM1.mp4',
+      'a<b.mp4',
+      'a?.mp4',
+      'tab\t.mp4',
+      'dot.',
+      'space ',
+    ]) {
+      test('rejects "$bad" on Windows', () {
+        expect(() => joinSafeFileName(r'C:\out', bad, context: windows), throwsArgumentError);
+      });
+    }
+
+    test('accepts ordinary names on Windows', () {
+      expect(joinSafeFileName(r'C:\out', 'my video.mp4', context: windows), r'C:\out\my video.mp4');
+      expect(joinSafeFileName(r'C:\out', 'console.log', context: windows), r'C:\out\console.log');
+    });
+
+    test('keeps names that are valid on POSIX', () {
+      expect(joinSafeFileName('/out', 'report.pdf:v2', context: posix), '/out/report.pdf:v2');
+      expect(joinSafeFileName('/out', 'CON', context: posix), '/out/CON');
+    });
+
+    test('rejects a NUL character on every platform', () {
+      expect(() => joinSafeFileName('/out', 'a\x00.mp4', context: posix), throwsArgumentError);
+      expect(() => joinSafeFileName(r'C:\out', 'a\x00.mp4', context: windows), throwsArgumentError);
     });
   });
 
