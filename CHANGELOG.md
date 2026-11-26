@@ -5,6 +5,115 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-07-16
+
+### Security
+- `saveToFolder` and `moveToFolder` now use only the base name of `name`, so an absolute or
+  `../` name (for example one derived from an untrusted URL) can no longer write outside the
+  target folder. A name with no usable base name (empty, `.`, `..`, trailing separator, NUL
+  character) throws an `ArgumentError`
+- On Windows, those methods also reject names Windows can't store as a plain file: reserved
+  characters (including `:`, which would write into an NTFS alternate data stream and leave the
+  visible file empty), control characters, device names (`CON`, `NUL.txt`, `COM1`, ...), and
+  names ending in a dot or space
+
+### Fixed
+- `XFile.getMediaType` now honors the provided MIME type override; previously the parameter was
+  silently ignored, so explicit `mimeType` arguments to `FileMediaSource.fromFile`/`fromPath` did
+  not affect media type detection
+- `AssetMediaSource.loadAsset` now slices the `ByteData` with its offset and length, preventing
+  corrupt data when the platform returns a view into a larger shared buffer
+- `NetworkMediaSource.fromUrl` detects the media type from the parsed URI path, so query strings
+  and fragments (e.g. `?token=a.b`) can no longer be mistaken for a file extension
+- `Uri.fileName` (and therefore default network media names) is now percent-decoded and handles
+  trailing slashes and extension-less URLs. A segment whose decoding would introduce a path
+  separator or `.`/`..` (e.g. `%2F`), or that is invalid UTF-8, keeps its raw encoded form, so a
+  URL can't turn a media name into a path and constructors don't throw on bad encoding
+- `MemoryMediaSource` equality no longer hashes the full byte content on every `hashCode`/`==`
+  call; content is compared only after the cheap fields match
+- Fixed misleading documentation of `MediaSource.extension` (returns the extension with its
+  leading dot, or an empty string)
+- Removed meaningless `@override` annotations from constructors
+- Web `PlatformUtils.fileExists` no longer downloads the whole file: blob/data URLs are fetched
+  with the body cancelled unread, other URLs use `HEAD`. The HTTP response is authoritative:
+  a revoked blob URL or a 404 now reports `false` (previously the cached bytes, or the 404
+  page body, made it look alive). An `XFile(path, bytes: ...)` with a non-addressable path now
+  reports `false`; use `XFile.fromData` for in-memory data. Servers that reject `HEAD`
+  (403/405/501, e.g. S3/GCS presigned URLs) get a one-byte ranged `GET` instead (a `416` reply
+  there means an existing empty object), and each
+  request times out after 10 seconds rather than hanging
+- `FileMediaSource.moveTo` on a source with no file on disk (e.g. `XFile.fromData` from a picker)
+  no longer writes the destination and then throws `StateError`
+- `FileMediaSource.moveTo` no longer pre-deletes an existing target. Rename and copy already
+  replace it, and the pre-delete destroyed the source when the target named the same file under
+  a different spelling (e.g. `./a.mp4` vs `a.mp4`)
+
+### Changed
+- `ImageAssetMedia`'s public constructor now only requires `assetPath`; `name`, `size`, and
+  `mimeType` are optional. The given `size` is trusted as-is (or left null), so use
+  `ImageAssetMedia.load` when the size should be read from the asset bundle. The other asset
+  media types remain constructible only through `load()`
+- **BREAKING**: `FileMediaSource` and `MemoryMediaSource` gained abstract template hooks
+  (`copyWithFile`, `createMemoryMedia`, `createFileMedia`). Classes that `implements` either
+  type must add them. The base classes can't be extended outside the package (their
+  constructors are private), and subclasses of the concrete memory types inherit the hooks
+- **BREAKING**: minimum SDK is now Dart 3.7 / Flutter 3.29, required by `cross_file` 0.3.5, which
+  fixes `XFile.fromData` ignoring its bytes on web when a path is set
+- **BREAKING**: `PlatformUtilsFacade.createDirectoryIfNotExists` is deprecated in favor of
+  `ensureParentDirectoryExists`, which describes the actual behavior (the method always created
+  the *parent* directory of the given path). Classes that implement `PlatformUtilsFacade`
+  (e.g. test fakes) must add the new methods (`ensureParentDirectoryExists`, `moveFile`)
+- **BREAKING**: `UrlMedia` no longer reports a fake `0 B` size or the invalid `'url'` MIME type;
+  size is now null and the MIME type is detected from the URL path when possible
+- **BREAKING**: `FileMediaSource.moveTo` now throws a `StateError` on native platforms when the
+  fallback copy succeeds but the original file cannot be deleted
+- **BREAKING**: `saveTo` on the concrete source classes now returns the base
+  `Future<FileMediaSource<M>>` instead of the concrete subtype (e.g. `Future<VideoFileMedia>`).
+  The runtime object is unchanged; only explicitly-typed assignments need updating. The typed
+  metadata survives via the generic (`FileMediaSource<VideoType>.metadata.duration` still works)
+- `FileMediaSource.moveTo` uses a fast platform rename when possible instead of copy + delete.
+  The destination folder is created first, so moving into a new folder still renames. Symbolic
+  links are still copied (the link's target content), since renaming would move the link itself.
+  The rename moves the file on disk, so for an `XFile.fromData` that also names an existing file
+  (edited bytes returned with the original path), use `saveTo` to write the bytes
+- On web, `saveTo` and `moveTo` return a source backed by the original blob instead of a
+  pointer to the download path, which a browser cannot read back. `moveTo` no longer
+  revokes the original on web. See "Web notes" in the README
+- `NetworkMediaSource.fromUrlOrNull` now forwards `name`, `size`, `mimeType`, `duration`, and
+  `mediaType` to `fromUrl`, and only swallows `FormatException`
+- Save/move/convert logic is now implemented once in the base classes
+  (`FileMediaSource`, `MemoryMediaSource`, `AssetMediaSource`) via template hooks, removing
+  drift between the per-type implementations
+- Repository moved to the balsm-health organization:
+  <https://github.com/balsm-health/media_source>
+
+### Deprecated
+- `MediaSource.isAnyType`: exact `runtimeType` comparison silently fails for base types; use
+  `is` checks or `fold` instead
+
+### Added
+- `PlatformUtilsFacade.moveFile` for fast native file renames
+- Lint enforcement via `flutter_lints` (previously no lint ruleset was included)
+
+### Documentation
+- README type detection uses `FileType` from `file_type_plus` (not re-exported; add it as a
+  dependency to use it directly). The `MediaType.fromPath`/`fromBytes` API it described doesn't
+  exist
+- README API reference lists the real constructors and factories for every source, `UrlMedia`'s
+  null size and path-detected MIME type, and `load()` as the way to create asset media
+- Removed the README section on `XFile` extension methods; those extensions are internal and
+  not exported
+- Fixed README examples that didn't compile: `async` callbacks inside `fold<String>`, awaiting
+  the synchronous `FileType.fromPath`, `is VideoType` checks on a `FileType`, and a custom
+  source calling `MemoryMediaSource`'s private constructor (it now extends `MediaSource`)
+- Documented that a `ThumbnailMediaSource` matches only the `thumbnail` branch of `fold`; fold
+  its `original` to handle the wrapped source
+
+### Dependencies
+- `file_type_plus` `^1.0.0` → `^1.1.0`: picks up detection fixes (extension
+  preferred over MIME type, `fromPath` returns `FileType.other` instead of
+  throwing on unparseable input, query/fragment-safe local names)
+
 ## [1.3.2] - 2026-04-28
 
 ### Changed
@@ -286,10 +395,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🔗 Built on `cross_file` for cross-platform file handling
 - ⚡ Lightweight with minimal dependencies
 
-[1.3.2]: https://github.com/balsm-io/media_source/releases/tag/v1.3.2
-[1.3.1]: https://github.com/balsm-io/media_source/releases/tag/v1.3.1
-[1.3.0]: https://github.com/balsm-io/media_source/releases/tag/v1.3.0
-[1.2.0]: https://github.com/balsm-io/media_source/releases/tag/v1.2.0
-[1.1.0]: https://github.com/balsm-io/media_source/releases/tag/v1.1.0
-[1.0.0]: https://github.com/balsm-io/media_source/releases/tag/v1.0.0
+[1.3.2]: https://github.com/balsm-health/media_source/releases/tag/v1.3.2
+[1.3.1]: https://github.com/balsm-health/media_source/releases/tag/v1.3.1
+[1.3.0]: https://github.com/balsm-health/media_source/releases/tag/v1.3.0
+[1.2.0]: https://github.com/balsm-health/media_source/releases/tag/v1.2.0
+[1.1.0]: https://github.com/balsm-health/media_source/releases/tag/v1.1.0
+[1.0.0]: https://github.com/balsm-health/media_source/releases/tag/v1.0.0
 

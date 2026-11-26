@@ -1,0 +1,4 @@
+# Format-only commits; skip in git blame:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# style: apply dart format (tall style, page_width 120)
+5c5891b9cda8045303c4429d968f2c42efe39481

@@ -95,14 +95,8 @@ class _AssetMediaExampleScreenState extends State<AssetMediaExampleScreen> {
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _output,
-                      style: const TextStyle(fontFamily: 'monospace'),
-                    ),
+                    decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),
+                    child: Text(_output, style: const TextStyle(fontFamily: 'monospace')),
                   ),
                 ],
               ),
@@ -118,7 +112,7 @@ class _AssetMediaExampleScreenState extends State<AssetMediaExampleScreen> {
 Future<String> videoAssetExample() async {
   final output = StringBuffer();
 
-  // Load a video asset from the bundle
+  // Load a video asset from the bundle (reads the asset to compute size)
   final video = await VideoAssetMedia.load(
     'assets/videos/intro.mp4',
     name: 'Intro Video',
@@ -214,6 +208,17 @@ Future<String> imageAssetExample() async {
   output.writeln('Optimized loading (size provided):');
   output.writeln('  Size: ${optimizedImage.size}');
   output.writeln('  (Asset not loaded until actually needed)');
+  output.writeln();
+
+  // Or construct synchronously - no await, no bundle read.
+  // The size is trusted as given (or left null if unknown); use load()
+  // when it should be read from the bundle.
+  final syncImage = ImageAssetMedia(assetPath: 'assets/images/icon.png', size: 50.kb);
+
+  output.writeln('Synchronous construction:');
+  output.writeln('  Name: ${syncImage.name}'); // defaults to 'icon.png'
+  output.writeln('  MIME type: ${syncImage.mimeType}'); // detected from path
+  output.writeln('  Size: ${syncImage.size}');
 
   return output.toString();
 }
@@ -233,11 +238,7 @@ Future<String> documentAssetExample() async {
   output.writeln();
 
   // Load other document types
-  final markdown = await OtherTypeAssetMedia.load(
-    'assets/docs/readme.md',
-    name: 'README',
-    mimeType: 'text/markdown',
-  );
+  final markdown = await OtherTypeAssetMedia.load('assets/docs/readme.md', name: 'README', mimeType: 'text/markdown');
 
   output.writeln('Markdown document:');
   output.writeln('  Name: ${markdown.name}');
@@ -251,10 +252,7 @@ Future<String> assetConversionExample() async {
   final output = StringBuffer();
 
   // Load a video asset
-  final assetVideo = await VideoAssetMedia.load(
-    'assets/videos/clip.mp4',
-    duration: const Duration(seconds: 15),
-  );
+  final assetVideo = await VideoAssetMedia.load('assets/videos/clip.mp4', duration: const Duration(seconds: 15));
 
   output.writeln('Original: Asset media');
   output.writeln('  Path: ${assetVideo.assetPath}');
@@ -331,10 +329,7 @@ Future<String> patternMatchingExample() async {
   final output = StringBuffer();
 
   // Load different media sources
-  final assetVideo = await VideoAssetMedia.load(
-    'assets/videos/intro.mp4',
-    duration: const Duration(seconds: 30),
-  );
+  final assetVideo = await VideoAssetMedia.load('assets/videos/intro.mp4', duration: const Duration(seconds: 30));
 
   output.writeln('Pattern matching with fold:');
   output.writeln();

@@ -1,3 +1,11 @@
+@TestOn('vm')
+// Reads fixtures from disk via XFile paths, which a browser can't address.
+library;
+
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:cross_file/cross_file.dart';
 import 'package:media_source/src/sources/file_media_source.dart';
 import 'package:media_source/src/sources/memory_media_source.dart';
 import 'package:media_source/src/extensions/file_extensions.dart';
@@ -53,21 +61,9 @@ void main() {
       final asset = Fixture.sample_video;
       final duration = const Duration(seconds: 60);
 
-      final video1 = await VideoFileMedia.fromPath(
-        asset.file.path,
-        name: 'video.mp4',
-        duration: duration,
-      );
-      final video2 = await VideoFileMedia.fromPath(
-        asset.file.path,
-        name: 'video.mp4',
-        duration: duration,
-      );
-      final video3 = await VideoFileMedia.fromPath(
-        asset.file.path,
-        name: 'other.mp4',
-        duration: duration,
-      );
+      final video1 = await VideoFileMedia.fromPath(asset.file.path, name: 'video.mp4', duration: duration);
+      final video2 = await VideoFileMedia.fromPath(asset.file.path, name: 'video.mp4', duration: duration);
+      final video3 = await VideoFileMedia.fromPath(asset.file.path, name: 'other.mp4', duration: duration);
 
       expect(video1.file.path, video2.file.path);
       expect(video1.name, video2.name);
@@ -126,22 +122,14 @@ void main() {
       final asset = Fixture.sample_audio;
       final duration = asset.duration!;
 
-      final audio1 = await AudioFileMedia.fromPath(
-        asset.file.path,
-        name: 'audio.mp3',
-        duration: duration,
-      );
+      final audio1 = await AudioFileMedia.fromPath(asset.file.path, name: 'audio.mp3', duration: duration);
       final audio2 = await AudioFileMedia.fromPath(
         asset.file.path,
         name: 'audio.mp3',
         duration: duration,
         mimeType: asset.mimeType,
       );
-      final audio3 = await AudioFileMedia.fromPath(
-        asset.file.path,
-        name: 'other.mp3',
-        duration: duration,
-      );
+      final audio3 = await AudioFileMedia.fromPath(asset.file.path, name: 'other.mp3', duration: duration);
 
       expect(audio1.file.path, audio2.file.path);
       expect(audio1.name, audio2.name);
@@ -585,7 +573,46 @@ void main() {
       expect(await movedFile.file.exists(), isTrue);
     });
 
-    test('should delete existing file at target before moving', () async {
+    test('should keep the file when the target is the same file spelled differently', () async {
+      final asset = Fixture.sample_video;
+      final video = await VideoFileMedia.fromPath(asset.file.path);
+      final path = '$tempDir/same_file.mp4';
+      final saved = await video.saveTo(path);
+
+      final moved = await saved.moveTo('./$path');
+
+      expect(await moved.file.exists(), isTrue);
+      expect(await moved.file.size(), video.size);
+    });
+
+    // Read-only source dir: rename fails (can't unlink from it), the copy
+    // fallback succeeds, and deleting the original fails.
+    test('should throw StateError when the original cannot be deleted after copying', () async {
+      final asset = Fixture.sample_video;
+      final video = await VideoFileMedia.fromPath(asset.file.path);
+      final lockedDir = Directory('$tempDir/locked');
+      final source = await video.saveTo('${lockedDir.path}/source.mp4');
+      final chmod = await Process.run('chmod', ['555', lockedDir.path]);
+      expect(chmod.exitCode, 0, reason: 'chmod failed: ${chmod.stderr}');
+      addTearDown(() => Process.run('chmod', ['755', lockedDir.path]));
+
+      await expectLater(source.moveTo('$tempDir/out/moved.mp4'), throwsStateError);
+      expect(await source.file.exists(), isTrue);
+      expect(await File('$tempDir/out/moved.mp4').exists(), isTrue);
+    }, skip: _skipPermissionTest());
+
+    test('should move an in-memory file (XFile.fromData) without throwing', () async {
+      final bytes = Uint8List.fromList([1, 2, 3, 4]);
+      final media = await OtherTypeFileMedia.fromFile(XFile.fromData(bytes, name: 'picked.bin'));
+      final target = '$tempDir/picked/picked.bin';
+
+      final moved = await media.moveTo(target);
+
+      expect(moved.file.path, target);
+      expect(await File(target).readAsBytes(), bytes);
+    });
+
+    test('should replace an existing file at the target', () async {
       final asset = Fixture.sample_video;
       final video = await VideoFileMedia.fromPath(asset.file.path);
 
@@ -746,4 +773,32 @@ void main() {
       expect(memoryMedia.bytes, await asset.file.readAsBytes());
     });
   });
+
+  group('mimeType override', () {
+    final noExtPath = '$tempDir/override/clip';
+
+    setUp(() async {
+      await PlatformUtils.instance.ensureParentDirectoryExists(noExtPath);
+      await File(noExtPath).writeAsBytes([0, 0, 0, 0]);
+    });
+
+    tearDownAll(() => PlatformUtils.instance.deleteDirectory(tempDir));
+
+    test('drives type detection when the path has no extension', () async {
+      final media = await FileMediaSource.fromPath(noExtPath, mimeType: 'video/mp4');
+      expect(media, isA<VideoFileMedia>());
+    });
+
+    test('falls back to other without an override', () async {
+      final media = await FileMediaSource.fromPath(noExtPath);
+      expect(media, isA<OtherTypeFileMedia>());
+    });
+  });
+}
+
+/// Directory permission bits only block non-root users on POSIX systems.
+Object _skipPermissionTest() {
+  if (Platform.isWindows) return 'POSIX permissions only';
+  final uid = (Process.runSync('id', ['-u']).stdout as String).trim();
+  return uid == '0' ? 'root ignores directory permissions' : false;
 }

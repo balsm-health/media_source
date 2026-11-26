@@ -8,14 +8,8 @@ void main() {
     late ImageMemoryMedia thumbnail;
 
     setUp(() {
-      original = ImageMemoryMedia(
-        Uint8List.fromList([1, 2, 3]),
-        name: 'original.jpg',
-      );
-      thumbnail = ImageMemoryMedia(
-        Uint8List.fromList([4, 5, 6]),
-        name: 'thumbnail.jpg',
-      );
+      original = ImageMemoryMedia(Uint8List.fromList([1, 2, 3]), name: 'original.jpg');
+      thumbnail = ImageMemoryMedia(Uint8List.fromList([4, 5, 6]), name: 'thumbnail.jpg');
     });
 
     test('should forward properties from original source', () {
@@ -28,10 +22,7 @@ void main() {
     });
 
     test('should handle optional thumbnail', () {
-      final sourceWithThumbnail = ThumbnailMediaSource(
-        original: original,
-        thumbnail: thumbnail,
-      );
+      final sourceWithThumbnail = ThumbnailMediaSource(original: original, thumbnail: thumbnail);
       final sourceWithoutThumbnail = ThumbnailMediaSource(original: original);
 
       expect(sourceWithThumbnail.hasThumbnail, isTrue);
@@ -39,10 +30,7 @@ void main() {
     });
 
     test('should allow specific generic types', () {
-      final videoOriginal = VideoMemoryMedia(
-        Uint8List.fromList([1, 2, 3]),
-        name: 'video.mp4',
-      );
+      final videoOriginal = VideoMemoryMedia(Uint8List.fromList([1, 2, 3]), name: 'video.mp4');
 
       final source = ThumbnailMediaSource<VideoType, VideoType>(original: videoOriginal);
 
@@ -51,14 +39,8 @@ void main() {
     });
 
     test('should allow thumbnail of different type', () {
-      final videoOriginal = VideoMemoryMedia(
-        Uint8List.fromList([1, 2, 3]),
-        name: 'video.mp4',
-      );
-      final source = ThumbnailMediaSource<VideoType, ImageType>(
-        original: videoOriginal,
-        thumbnail: thumbnail,
-      );
+      final videoOriginal = VideoMemoryMedia(Uint8List.fromList([1, 2, 3]), name: 'video.mp4');
+      final source = ThumbnailMediaSource<VideoType, ImageType>(original: videoOriginal, thumbnail: thumbnail);
 
       expect(source.original, videoOriginal);
       expect(source.original, isA<MediaSource<VideoType>>());
@@ -69,18 +51,10 @@ void main() {
     });
 
     test('should support equality', () {
-      final source1 = ThumbnailMediaSource(
-        original: original,
-        thumbnail: thumbnail,
-      );
-      final source2 = ThumbnailMediaSource(
-        original: original,
-        thumbnail: thumbnail,
-      );
+      final source1 = ThumbnailMediaSource(original: original, thumbnail: thumbnail);
+      final source2 = ThumbnailMediaSource(original: original, thumbnail: thumbnail);
       // Different thumbnail
-      final source3 = ThumbnailMediaSource(
-        original: original,
-      );
+      final source3 = ThumbnailMediaSource(original: original);
       // Different original
       final source4 = ThumbnailMediaSource(
         original: thumbnail, // Using thumbnail as original for difference
@@ -94,21 +68,13 @@ void main() {
     });
 
     test('should support pattern matching via fold', () {
-      final source = ThumbnailMediaSource(
-        original: original,
-        thumbnail: thumbnail,
-      );
+      final source = ThumbnailMediaSource(original: original, thumbnail: thumbnail);
 
-      final result = source.fold(
-        thumbnail: (s) => 'thumbnail',
-        orElse: () => 'else',
-      );
+      final result = source.fold(thumbnail: (s) => 'thumbnail', orElse: () => 'else');
 
       expect(result, 'thumbnail');
 
-      final resultElse = source.fold(
-        orElse: () => 'else',
-      );
+      final resultElse = source.fold(orElse: () => 'else');
 
       expect(resultElse, 'else');
     });

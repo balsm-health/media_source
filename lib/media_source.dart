@@ -42,7 +42,7 @@
 ///   @override
 ///   Future<FileMediaSource<StickerType>> saveTo(String path) async {
 ///     final file = XFile.fromData(bytes, name: name, path: path);
-///     await PlatformUtils.instance.createDirectoryIfNotExists(path);
+///     await PlatformUtils.instance.ensureParentDirectoryExists(path);
 ///     await file.saveTo(path);
 ///     // Provide your own FileMediaSource implementation for StickerType
 ///     throw UnimplementedError('Provide a FileMediaSource<StickerType>');
@@ -100,10 +100,11 @@
 ///   memory: (m) => 'Memory: ${m.size}',
 ///   network: (n) => 'URL: ${n.uri}',
 ///   asset: (a) => 'Asset: ${a.assetPath}',
+///   thumbnail: (t) => 'Thumbnail of ${t.original.name}',
 ///   orElse: () => 'Unknown',
 /// );
 /// ```
-library media_source;
+library;
 
 export 'src/sources/asset_media_source.dart';
 export 'src/sources/file_media_source.dart';

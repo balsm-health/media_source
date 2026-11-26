@@ -1,10 +1,11 @@
 import 'package:cross_file/cross_file.dart';
+import 'package:flutter/foundation.dart';
 import 'package:media_source/src/media_type.dart';
 import 'package:media_source/src/sources/media_source.dart';
 import 'package:media_source/src/sources/memory_media_source.dart';
 import 'package:media_source/src/extensions/file_extensions.dart';
+import 'package:media_source/src/utils/file_name.dart';
 import 'package:media_source/src/utils/platform_utils.dart';
-import 'package:path/path.dart' as p;
 import 'package:file_sized/file_sized.dart';
 import 'package:file_type_plus/file_type_plus.dart';
 
@@ -40,16 +41,37 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
     required String? name,
     required super.size,
     required String? mimeType,
-  }) : super(
-          mimeType: mimeType ?? file.mimeType ?? FileUtil.getMimeTypeFromPath(file.path),
-          name: name ?? file.name,
-        );
+  }) : super(mimeType: mimeType ?? file.mimeType ?? FileUtil.getMimeTypeFromPath(file.path), name: name ?? file.name);
+
+  /// Creates a copy of this media source pointing at [file] with [size].
+  ///
+  /// Template hook used by [saveTo] and [moveTo] to recreate the concrete
+  /// subclass after the underlying file changes location.
+  @protected
+  FileMediaSource<M> copyWithFile(XFile file, FileSize? size);
+
+  /// Creates the in-memory counterpart of this media source for [bytes].
+  ///
+  /// Template hook used by [convertToMemory].
+  @protected
+  MemoryMediaSource<M> createMemoryMedia(Uint8List bytes);
 
   /// Saves this media to the specified file path.
   ///
-  /// Returns a new [FileMediaSource] instance pointing to the saved file.
-  /// Subclasses implement specific type handling.
-  Future<FileMediaSource<M>> saveTo(String path);
+  /// Creates the directory if it doesn't exist, then saves the file
+  /// and returns a new [FileMediaSource] instance pointing to the saved
+  /// location. Subclasses narrow the return type via [copyWithFile].
+  ///
+  /// On web, [path] only names the browser download and is not addressable
+  /// afterwards, so the returned source keeps the existing file handle.
+  Future<FileMediaSource<M>> saveTo(String path) async {
+    await PlatformUtils.instance.ensureParentDirectoryExists(path);
+    await file.saveTo(path);
+    final newSize = size ?? await file.size();
+    // Web-only branch, unreachable in VM tests.
+    if (kIsWeb) return copyWithFile(file, newSize); // coverage:ignore-line
+    return copyWithFile(XFile(path, name: name, mimeType: mimeType, length: newSize.inBytes), newSize);
+  }
 
   /// Saves this media to a folder, preserving the original filename.
   ///
@@ -57,12 +79,25 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   /// - [folderPath]: The directory where the file should be saved
   ///
   /// Returns a new [FileMediaSource] instance with the file in the folder.
-  Future<FileMediaSource<M>> saveToFolder(String folderPath) => saveTo(p.join(folderPath, name));
+  Future<FileMediaSource<M>> saveToFolder(String folderPath) => saveTo(joinSafeFileName(folderPath, name));
 
   /// Moves this media to a new file path.
   ///
-  /// If the destination already exists, it will be deleted before moving.
-  /// Returns early if the source path matches the destination.
+  /// Uses a fast platform rename when available and falls back to
+  /// copy + delete otherwise. An existing file at the destination is
+  /// replaced. Returns early if the source path matches the destination.
+  ///
+  /// The rename moves the file on disk at `file.path`. An `XFile.fromData`
+  /// that also names an existing file (e.g. edited bytes returned with the
+  /// original path) would move the on-disk file, not its bytes; use [saveTo]
+  /// for such sources.
+  ///
+  /// Throws a [StateError] on native platforms when the fallback copy
+  /// succeeds but the original on-disk file cannot be deleted (both files
+  /// exist at that point). A source with no file on disk (e.g. created with
+  /// `XFile.fromData`) is simply written to [path]. On web the original is
+  /// left in place, since the returned source still reads from it (see
+  /// [saveTo]).
   ///
   /// Parameters:
   /// - [path]: The destination file path
@@ -70,12 +105,22 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   /// Returns a new [FileMediaSource] instance at the new location.
   Future<FileMediaSource<M>> moveTo(String path) async {
     if (file.path == path) return this;
-    final newPathFile = XFile(path);
-    if (await newPathFile.exists()) {
-      await newPathFile.delete();
+    // No pre-delete of an existing target: rename and copy both overwrite it,
+    // and deleting first would destroy the source when [path] names the same
+    // file under a different spelling (e.g. `./a.mp4` vs `a.mp4`).
+    if (await PlatformUtils.instance.moveFile(file.path, path)) {
+      final moved = XFile(path, name: name, mimeType: mimeType, length: size?.inBytes);
+      return copyWithFile(moved, size ?? await moved.size());
     }
+    // An in-memory file (e.g. XFile.fromData from a picker) has nothing on
+    // disk to remove after copying, so only an on-disk source is deleted.
+    final sourceOnDisk = !kIsWeb && await file.exists();
     final saved = await saveTo(path);
-    await delete();
+    if (!sourceOnDisk) return saved;
+    final deleted = await delete();
+    if (!deleted) {
+      throw StateError('moveTo: copied "${file.path}" to "$path" but failed to delete the original file.');
+    }
     return saved;
   }
 
@@ -85,12 +130,19 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   /// - [folderPath]: The directory where the file should be moved
   ///
   /// Returns a new [FileMediaSource] instance with the file in the folder.
-  Future<FileMediaSource<M>> moveToFolder(String folderPath) => moveTo(p.join(folderPath, name));
+  Future<FileMediaSource<M>> moveToFolder(String folderPath) => moveTo(joinSafeFileName(folderPath, name));
 
   /// Deletes the file from the file system.
   ///
   /// Returns true if deletion was successful, false otherwise.
   Future<bool> delete() => file.delete();
+
+  /// Converts this media to an in-memory representation.
+  ///
+  /// Loads the entire file content into memory as a byte array.
+  /// Useful for uploading or processing without file system access.
+  @override
+  Future<MemoryMediaSource<M>> convertToMemory() async => createMemoryMedia(await file.readAsBytes());
 
   /// Creates a [FileMediaSource] from a file path.
   ///
@@ -113,20 +165,14 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
     String? mimeType,
     Duration? duration,
     FileType? mediaType,
-  }) =>
-      fromFile(
-        XFile(
-          path,
-          mimeType: mimeType,
-          length: size?.inBytes,
-          name: name,
-        ),
-        name: name,
-        mimeType: mimeType,
-        duration: duration,
-        mediaType: mediaType,
-        size: size,
-      );
+  }) => fromFile(
+    XFile(path, mimeType: mimeType, length: size?.inBytes, name: name),
+    name: name,
+    mimeType: mimeType,
+    duration: duration,
+    mediaType: mediaType,
+    size: size,
+  );
 
   /// Creates a [FileMediaSource] from an XFile object.
   ///
@@ -157,45 +203,18 @@ abstract class FileMediaSource<M extends FileType> extends MediaSource<M> implem
   }) async {
     mediaType ??= await file.getMediaType(mimeType);
     if (mediaType.isAny([FileType.audio])) {
-      return AudioFileMedia.fromFile(
-        file,
-        name: name,
-        duration: duration,
-        mimeType: mimeType,
-        size: size,
-      );
+      return AudioFileMedia.fromFile(file, name: name, duration: duration, mimeType: mimeType, size: size);
     }
     if (mediaType.isAny([FileType.video])) {
-      return VideoFileMedia.fromFile(
-        file,
-        name: name,
-        duration: duration,
-        mimeType: mimeType,
-        size: size,
-      );
+      return VideoFileMedia.fromFile(file, name: name, duration: duration, mimeType: mimeType, size: size);
     }
     if (mediaType.isAny([FileType.image])) {
-      return ImageFileMedia.fromFile(
-        file,
-        name: name,
-        mimeType: mimeType,
-        size: size,
-      );
+      return ImageFileMedia.fromFile(file, name: name, mimeType: mimeType, size: size);
     }
     if (mediaType.isAny([FileType.document])) {
-      return DocumentFileMedia.fromFile(
-        file,
-        name: name,
-        mimeType: mimeType,
-        size: size,
-      );
+      return DocumentFileMedia.fromFile(file, name: name, mimeType: mimeType, size: size);
     }
-    return OtherTypeFileMedia.fromFile(
-      file,
-      name: name,
-      mimeType: mimeType,
-      size: size,
-    );
+    return OtherTypeFileMedia.fromFile(file, name: name, mimeType: mimeType, size: size);
   }
 
   /// Includes the file object in equality comparisons.
@@ -239,19 +258,8 @@ class VideoFileMedia extends FileMediaSource<VideoType> {
     String? mimeType,
     FileSize? size,
   }) async {
-    final file = XFile(
-      path,
-      name: name,
-      mimeType: mimeType,
-      length: size?.inBytes,
-    );
-    return fromFile(
-      file,
-      name: name,
-      duration: duration,
-      mimeType: mimeType,
-      size: size,
-    );
+    final file = XFile(path, name: name, mimeType: mimeType, length: size?.inBytes);
+    return fromFile(file, name: name, duration: duration, mimeType: mimeType, size: size);
   }
 
   /// Creates a [VideoFileMedia] from an XFile object.
@@ -278,41 +286,13 @@ class VideoFileMedia extends FileMediaSource<VideoType> {
     );
   }
 
-  /// Saves this video to the specified file path.
-  ///
-  /// Creates the directory if it doesn't exist, then saves the file
-  /// and returns a new instance pointing to the saved location.
   @override
-  Future<VideoFileMedia> saveTo(String path) async {
-    await PlatformUtils.instance.createDirectoryIfNotExists(path);
-    await file.saveTo(path);
-    return VideoFileMedia._(
-      file: XFile(
-        path,
-        name: name,
-        mimeType: mimeType,
-        length: size?.inBytes,
-      ),
-      size: size ?? await file.size(),
-      name: name,
-      duration: metadata.duration,
-      mimeType: mimeType,
-    );
-  }
+  VideoFileMedia copyWithFile(XFile file, FileSize? size) =>
+      VideoFileMedia._(file: file, size: size, name: name, duration: metadata.duration, mimeType: mimeType);
 
-  /// Converts this video to an in-memory representation.
-  ///
-  /// Loads the entire file content into memory as a byte array.
-  /// Useful for uploading or processing without file system access.
   @override
-  Future<MemoryMediaSource<VideoType>> convertToMemory() async {
-    return VideoMemoryMedia(
-      await file.readAsBytes(),
-      name: name,
-      duration: metadata.duration,
-      mimeType: mimeType,
-    );
-  }
+  VideoMemoryMedia createMemoryMedia(Uint8List bytes) =>
+      VideoMemoryMedia(bytes, name: name, duration: metadata.duration, mimeType: mimeType);
 }
 
 /// Represents audio files stored on the file system.
@@ -351,19 +331,8 @@ class AudioFileMedia extends FileMediaSource<AudioType> {
     String? mimeType,
     FileSize? size,
   }) async {
-    final file = XFile(
-      path,
-      mimeType: mimeType,
-      name: name,
-      length: size?.inBytes,
-    );
-    return fromFile(
-      file,
-      name: name,
-      duration: duration,
-      mimeType: mimeType,
-      size: size,
-    );
+    final file = XFile(path, mimeType: mimeType, name: name, length: size?.inBytes);
+    return fromFile(file, name: name, duration: duration, mimeType: mimeType, size: size);
   }
 
   /// Creates an [AudioFileMedia] from an XFile object.
@@ -390,41 +359,13 @@ class AudioFileMedia extends FileMediaSource<AudioType> {
     );
   }
 
-  /// Saves this audio to the specified file path.
-  ///
-  /// Creates the directory if it doesn't exist, then saves the file
-  /// and returns a new instance pointing to the saved location.
   @override
-  Future<AudioFileMedia> saveTo(String path) async {
-    await PlatformUtils.instance.createDirectoryIfNotExists(path);
-    await file.saveTo(path);
-    return AudioFileMedia._(
-      file: XFile(
-        path,
-        name: super.name,
-        mimeType: super.mimeType,
-        length: size?.inBytes,
-      ),
-      size: size ?? await file.size(),
-      name: name,
-      duration: metadata.duration,
-      mimeType: mimeType,
-    );
-  }
+  AudioFileMedia copyWithFile(XFile file, FileSize? size) =>
+      AudioFileMedia._(file: file, size: size, name: name, duration: metadata.duration, mimeType: mimeType);
 
-  /// Converts this audio to an in-memory representation.
-  ///
-  /// Loads the entire file content into memory as a byte array.
-  /// Useful for uploading or processing without file system access.
   @override
-  Future<MemoryMediaSource<AudioType>> convertToMemory() async {
-    return AudioMemoryMedia(
-      await file.readAsBytes(),
-      name: name,
-      duration: metadata.duration,
-      mimeType: mimeType,
-    );
-  }
+  AudioMemoryMedia createMemoryMedia(Uint8List bytes) =>
+      AudioMemoryMedia(bytes, name: name, duration: metadata.duration, mimeType: mimeType);
 }
 
 /// Represents image files stored on the file system.
@@ -439,12 +380,8 @@ class ImageFileMedia extends FileMediaSource<ImageType> {
   /// - [name]: Display name
   /// - [size]: File size
   /// - [mimeType]: MIME type of the image
-  ImageFileMedia._({
-    required super.file,
-    required super.name,
-    required super.size,
-    required super.mimeType,
-  }) : super._(metadata: ImageType());
+  ImageFileMedia._({required super.file, required super.name, required super.size, required super.mimeType})
+    : super._(metadata: ImageType());
 
   /// Creates an [ImageFileMedia] from a file path.
   ///
@@ -453,24 +390,9 @@ class ImageFileMedia extends FileMediaSource<ImageType> {
   /// - [name]: Optional custom display name
   /// - [mimeType]: Optional MIME type override
   /// - [size]: Optional pre-computed file size
-  static Future<ImageFileMedia> fromPath(
-    String path, {
-    String? name,
-    String? mimeType,
-    FileSize? size,
-  }) async {
-    final file = XFile(
-      path,
-      name: name,
-      mimeType: mimeType,
-      length: size?.inBytes,
-    );
-    return fromFile(
-      file,
-      name: name,
-      mimeType: mimeType,
-      size: size,
-    );
+  static Future<ImageFileMedia> fromPath(String path, {String? name, String? mimeType, FileSize? size}) async {
+    final file = XFile(path, name: name, mimeType: mimeType, length: size?.inBytes);
+    return fromFile(file, name: name, mimeType: mimeType, size: size);
   }
 
   /// Creates an [ImageFileMedia] from an XFile object.
@@ -480,53 +402,16 @@ class ImageFileMedia extends FileMediaSource<ImageType> {
   /// - [name]: Optional custom display name
   /// - [mimeType]: Optional MIME type override
   /// - [size]: Optional pre-computed file size, auto-detected if not provided
-  static Future<ImageFileMedia> fromFile(
-    XFile file, {
-    String? name,
-    String? mimeType,
-    FileSize? size,
-  }) async {
-    return ImageFileMedia._(
-      file: file,
-      size: size ?? await file.size(),
-      name: name,
-      mimeType: mimeType,
-    );
+  static Future<ImageFileMedia> fromFile(XFile file, {String? name, String? mimeType, FileSize? size}) async {
+    return ImageFileMedia._(file: file, size: size ?? await file.size(), name: name, mimeType: mimeType);
   }
 
-  /// Saves this image to the specified file path.
-  ///
-  /// Creates the directory if it doesn't exist, then saves the file
-  /// and returns a new instance pointing to the saved location.
   @override
-  Future<ImageFileMedia> saveTo(String path) async {
-    await PlatformUtils.instance.createDirectoryIfNotExists(path);
-    await file.saveTo(path);
-    return ImageFileMedia._(
-      file: XFile(
-        path,
-        name: super.name,
-        mimeType: super.mimeType,
-        length: size?.inBytes,
-      ),
-      size: size ?? await file.size(),
-      name: name,
-      mimeType: mimeType,
-    );
-  }
+  ImageFileMedia copyWithFile(XFile file, FileSize? size) =>
+      ImageFileMedia._(file: file, size: size, name: name, mimeType: mimeType);
 
-  /// Converts this image to an in-memory representation.
-  ///
-  /// Loads the entire file content into memory as a byte array.
-  /// Useful for uploading or processing without file system access.
   @override
-  Future<MemoryMediaSource<ImageType>> convertToMemory() async {
-    return ImageMemoryMedia(
-      await file.readAsBytes(),
-      name: name,
-      mimeType: mimeType,
-    );
-  }
+  ImageMemoryMedia createMemoryMedia(Uint8List bytes) => ImageMemoryMedia(bytes, name: name, mimeType: mimeType);
 }
 
 /// Represents document files stored on the file system.
@@ -541,12 +426,8 @@ class DocumentFileMedia extends FileMediaSource<DocumentType> {
   /// - [name]: Display name
   /// - [size]: File size
   /// - [mimeType]: MIME type of the document
-  DocumentFileMedia._({
-    required super.file,
-    required super.name,
-    required super.size,
-    required super.mimeType,
-  }) : super._(metadata: DocumentType());
+  DocumentFileMedia._({required super.file, required super.name, required super.size, required super.mimeType})
+    : super._(metadata: DocumentType());
 
   /// Creates a [DocumentFileMedia] from a file path.
   ///
@@ -555,24 +436,9 @@ class DocumentFileMedia extends FileMediaSource<DocumentType> {
   /// - [name]: Optional custom display name
   /// - [mimeType]: Optional MIME type override
   /// - [size]: Optional pre-computed file size
-  static Future<DocumentFileMedia> fromPath(
-    String path, {
-    String? name,
-    String? mimeType,
-    FileSize? size,
-  }) async {
-    final file = XFile(
-      path,
-      name: name,
-      mimeType: mimeType,
-      length: size?.inBytes,
-    );
-    return fromFile(
-      file,
-      name: name,
-      mimeType: mimeType,
-      size: size,
-    );
+  static Future<DocumentFileMedia> fromPath(String path, {String? name, String? mimeType, FileSize? size}) async {
+    final file = XFile(path, name: name, mimeType: mimeType, length: size?.inBytes);
+    return fromFile(file, name: name, mimeType: mimeType, size: size);
   }
 
   /// Creates a [DocumentFileMedia] from an XFile object.
@@ -582,53 +448,16 @@ class DocumentFileMedia extends FileMediaSource<DocumentType> {
   /// - [name]: Optional custom display name
   /// - [mimeType]: Optional MIME type override
   /// - [size]: Optional pre-computed file size, auto-detected if not provided
-  static Future<DocumentFileMedia> fromFile(
-    XFile file, {
-    String? name,
-    String? mimeType,
-    FileSize? size,
-  }) async {
-    return DocumentFileMedia._(
-      file: file,
-      size: size ?? await file.size(),
-      name: name,
-      mimeType: mimeType,
-    );
+  static Future<DocumentFileMedia> fromFile(XFile file, {String? name, String? mimeType, FileSize? size}) async {
+    return DocumentFileMedia._(file: file, size: size ?? await file.size(), name: name, mimeType: mimeType);
   }
 
-  /// Saves this document to the specified file path.
-  ///
-  /// Creates the directory if it doesn't exist, then saves the file
-  /// and returns a new instance pointing to the saved location.
   @override
-  Future<DocumentFileMedia> saveTo(String path) async {
-    await PlatformUtils.instance.createDirectoryIfNotExists(path);
-    await file.saveTo(path);
-    return DocumentFileMedia._(
-      file: XFile(
-        path,
-        name: super.name,
-        mimeType: super.mimeType,
-        length: size?.inBytes,
-      ),
-      size: size ?? await file.size(),
-      name: name,
-      mimeType: mimeType,
-    );
-  }
+  DocumentFileMedia copyWithFile(XFile file, FileSize? size) =>
+      DocumentFileMedia._(file: file, size: size, name: name, mimeType: mimeType);
 
-  /// Converts this document to an in-memory representation.
-  ///
-  /// Loads the entire file content into memory as a byte array.
-  /// Useful for uploading or processing without file system access.
   @override
-  Future<MemoryMediaSource<DocumentType>> convertToMemory() async {
-    return DocumentMemoryMedia(
-      await file.readAsBytes(),
-      name: name,
-      mimeType: mimeType,
-    );
-  }
+  DocumentMemoryMedia createMemoryMedia(Uint8List bytes) => DocumentMemoryMedia(bytes, name: name, mimeType: mimeType);
 }
 
 /// Represents files of unclassified or unknown types.
@@ -644,13 +473,8 @@ class OtherTypeFileMedia extends FileMediaSource<OtherType> {
   /// - [name]: Display name
   /// - [size]: File size
   /// - [mimeType]: MIME type of the file
-  @override
-  OtherTypeFileMedia._({
-    required super.file,
-    required super.name,
-    required super.size,
-    required super.mimeType,
-  }) : super._(metadata: OtherType());
+  OtherTypeFileMedia._({required super.file, required super.name, required super.size, required super.mimeType})
+    : super._(metadata: OtherType());
 
   /// Creates an [OtherTypeFileMedia] from a file path.
   ///
@@ -659,24 +483,9 @@ class OtherTypeFileMedia extends FileMediaSource<OtherType> {
   /// - [name]: Optional custom display name
   /// - [mimeType]: Optional MIME type override
   /// - [size]: Optional pre-computed file size
-  static Future<OtherTypeFileMedia> fromPath(
-    String path, {
-    String? name,
-    String? mimeType,
-    FileSize? size,
-  }) {
-    final file = XFile(
-      path,
-      name: name,
-      mimeType: mimeType,
-      length: size?.inBytes,
-    );
-    return fromFile(
-      file,
-      name: name,
-      mimeType: mimeType,
-      size: size,
-    );
+  static Future<OtherTypeFileMedia> fromPath(String path, {String? name, String? mimeType, FileSize? size}) {
+    final file = XFile(path, name: name, mimeType: mimeType, length: size?.inBytes);
+    return fromFile(file, name: name, mimeType: mimeType, size: size);
   }
 
   /// Creates an [OtherTypeFileMedia] from an XFile object.
@@ -686,46 +495,15 @@ class OtherTypeFileMedia extends FileMediaSource<OtherType> {
   /// - [name]: Optional custom display name
   /// - [mimeType]: Optional MIME type override
   /// - [size]: Optional pre-computed file size, auto-detected if not provided
-  static Future<OtherTypeFileMedia> fromFile(
-    XFile file, {
-    String? name,
-    String? mimeType,
-    FileSize? size,
-  }) async {
-    return OtherTypeFileMedia._(
-      file: file,
-      size: size ?? await file.size(),
-      name: name,
-      mimeType: mimeType,
-    );
+  static Future<OtherTypeFileMedia> fromFile(XFile file, {String? name, String? mimeType, FileSize? size}) async {
+    return OtherTypeFileMedia._(file: file, size: size ?? await file.size(), name: name, mimeType: mimeType);
   }
 
-  /// Saves this file to the specified file path.
-  ///
-  /// Creates the directory if it doesn't exist, then saves the file
-  /// and returns a new instance pointing to the saved location.
   @override
-  Future<OtherTypeFileMedia> saveTo(String path) async {
-    await PlatformUtils.instance.createDirectoryIfNotExists(path);
-    await file.saveTo(path);
-    return OtherTypeFileMedia._(
-      file: XFile(path, name: super.name, mimeType: super.mimeType),
-      size: await file.size(),
-      name: name,
-      mimeType: mimeType,
-    );
-  }
+  OtherTypeFileMedia copyWithFile(XFile file, FileSize? size) =>
+      OtherTypeFileMedia._(file: file, size: size, name: name, mimeType: mimeType);
 
-  /// Converts this file to an in-memory representation.
-  ///
-  /// Loads the entire file content into memory as a byte array.
-  /// Useful for uploading or processing without file system access.
   @override
-  Future<MemoryMediaSource<OtherType>> convertToMemory() async {
-    return OtherTypeMemoryMedia(
-      await file.readAsBytes(),
-      name: name,
-      mimeType: mimeType,
-    );
-  }
+  OtherTypeMemoryMedia createMemoryMedia(Uint8List bytes) =>
+      OtherTypeMemoryMedia(bytes, name: name, mimeType: mimeType);
 }

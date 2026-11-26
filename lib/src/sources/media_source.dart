@@ -40,23 +40,22 @@ abstract class MediaSource<M extends FileType> extends Equatable {
 
   /// Extracts the file extension from the name.
   ///
-  /// Returns the substring after the last dot, or the entire name if no dot exists.
+  /// Returns the extension including the leading dot (e.g. '.mp4'), or an
+  /// empty string if the name has no extension.
   String get extension => p.extension(name);
 
   /// Creates a [MediaSource] with the specified properties.
-  const MediaSource({
-    required this.metadata,
-    required this.mimeType,
-    required String? name,
-    required this.size,
-  }) : name = name ?? '';
+  const MediaSource({required this.metadata, required this.mimeType, required String? name, required this.size})
+    : name = name ?? '';
 
   @override
   List<Object?> get props => [name, mimeType, size, metadata];
 
   /// Checks if this media source's runtime type is in the given list.
   ///
-  /// Useful for runtime type checking against multiple types.
+  /// Only exact runtime types match: `isAnyType([FileMediaSource])` is always
+  /// `false` for subclasses such as [VideoFileMedia].
+  @Deprecated('Exact runtimeType comparison silently fails for base types; use `is` checks or fold instead.')
   bool isAnyType(List<Type> list) => list.contains(runtimeType);
 
   /// Performs pattern matching on media sources using a fold-like pattern.
@@ -70,13 +69,14 @@ abstract class MediaSource<M extends FileType> extends Equatable {
   /// - [orElse]: Called if no matching callback is provided
   ///
   /// Returns: The result of the matching callback or [orElse]
-  T fold<T>(
-      {T Function(FileMediaSource<M> fileMedia)? file,
-      T Function(MemoryMediaSource<M> memoryMedia)? memory,
-      T Function(NetworkMediaSource<M> networkMedia)? network,
-      T Function(AssetMediaSource<M> assetMedia)? asset,
-      T Function(ThumbnailMediaSource<M, dynamic> thumbnailMedia)? thumbnail,
-      required T Function() orElse}) {
+  T fold<T>({
+    T Function(FileMediaSource<M> fileMedia)? file,
+    T Function(MemoryMediaSource<M> memoryMedia)? memory,
+    T Function(NetworkMediaSource<M> networkMedia)? network,
+    T Function(AssetMediaSource<M> assetMedia)? asset,
+    T Function(ThumbnailMediaSource<M, dynamic> thumbnailMedia)? thumbnail,
+    required T Function() orElse,
+  }) {
     if (this is FileMediaSource<M> && file != null) {
       return file(this as FileMediaSource<M>);
     } else if (this is MemoryMediaSource<M> && memory != null) {

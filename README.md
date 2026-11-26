@@ -1,4 +1,4 @@
-<img src="https://github.com/balsm-io/media_source/raw/main/assets/wallpaper.png" alt="wallpaper" />
+<img src="https://github.com/balsm-health/media_source/raw/main/assets/wallpaper.png" alt="wallpaper" />
 
 
 <h2 align="center">
@@ -6,12 +6,12 @@
 </h2>
 
 <p align="center">
-   <a href="https://github.com/balsm-io/media_source/actions/workflows/build.yml">
-    <img src="https://github.com/balsm-io/media_source/actions/workflows/build.yml/badge.svg?branch=main" alt="GitHub action">
+   <a href="https://github.com/balsm-health/media_source/actions/workflows/build.yml">
+    <img src="https://github.com/balsm-health/media_source/actions/workflows/build.yml/badge.svg?branch=main" alt="GitHub action">
   </a>
 
-  <a href="https://codecov.io/gh/balsm-io/media_source" > 
- <img src="https://codecov.io/gh/balsm-io/media_source/graph/badge.svg?token=sSK2ZySczS"/> 
+  <a href="https://codecov.io/gh/balsm-health/media_source" > 
+ <img src="https://codecov.io/gh/balsm-health/media_source/graph/badge.svg?token=sSK2ZySczS"/> 
  </a>
   <a href="https://pub.dev/packages/media_source">
     <img alt="Pub Package" src="https://img.shields.io/pub/v/media_source">
@@ -70,7 +70,7 @@ Add `media_source` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  media_source: ^1.3.2
+  media_source: ^2.0.0
 ```
 
 Then run:
@@ -85,18 +85,25 @@ flutter pub get
 
 ### Basic Media Type Detection
 
+Type detection comes from [file_type_plus](https://pub.dev/packages/file_type_plus), which
+`media_source` does not re-export. Add it to your dependencies to use `FileType` directly:
+
 ```dart
-import 'package:media_source/media_source.dart';
+import 'package:file_type_plus/file_type_plus.dart';
 
-// Detect from file path
-final imageType = MediaType.fromPath('/path/to/photo.jpg', 'image/jpeg');
-print(imageType); // ImageType
+// Detect from a file path (by extension, or by the MIME type when given)
+final imageType = FileType.fromPath('/path/to/photo.jpg');
+print(imageType.isAny([FileType.image])); // true
 
-// Detect from bytes
+// Detect from bytes, with an optional MIME type hint
 final bytes = await file.readAsBytes();
-final videoType = MediaType.fromBytes(bytes, 'video/mp4');
-print(videoType); // VideoType
+final videoType = FileType.fromBytes(bytes, 'video/mp4');
+print(videoType.isAny([FileType.video])); // true
 ```
+
+You rarely need this yourself: `FileMediaSource.fromPath` / `fromFile` and
+`NetworkMediaSource.fromUrl` detect the type and return the matching subclass
+(`VideoFileMedia`, `ImageNetworkMedia`, ...).
 
 ### Working with **File Media Source**
 
@@ -163,8 +170,8 @@ final videoMemory = VideoMemoryMedia(
 ### Working with **Network Media Source**
 
 ```dart
+import 'package:file_type_plus/file_type_plus.dart'; // for FileType
 import 'package:media_source/media_source.dart';
-import 'package:file_sized/file_sized.dart';
 
 // Create from URL with automatic type detection
 final media = NetworkMediaSource.fromUrl(
@@ -271,6 +278,8 @@ print(result); // Asset: assets/videos/intro.mp4
 - 🎯 **Type-safe asset loading** - Video, Audio, Image, Document asset types
 - 🔄 **Seamless conversions** - Convert assets to memory or file sources
 - 💾 **Lazy loading** - Provide size hint to avoid loading entire asset
+- 🏗️ **Construction** - Create assets with `load()`. `ImageAssetMedia` also has a public
+  synchronous constructor that uses the given `size` as-is (or null) without reading the bundle
 - 🧩 **Pattern matching support** - Works with fold() for consistent API
 - ✅ **Cross-platform** - Works on all Flutter platforms
 
@@ -296,40 +305,27 @@ Future<void> processMedia() async {
     thumbnail: thumb,
   );
 
-  // Check media type and handle accordingly
+  // A ThumbnailMediaSource matches the `thumbnail` branch, never `file`,
+  // so fold again on the wrapped original.
   final result = mediaWithThumb.fold<String>(
-    file: (fileMedia) async {
-      // Save a backup
-      await fileMedia.saveTo('/backup/video.mp4');
-      
-      // Convert to memory for processing
-      final memoryMedia = await fileMedia.convertToMemory();
-      
-      // Process the bytes
-      print('Processing ${memoryMedia.bytes.length} bytes');
-      
-      return 'File processed: ${fileMedia.name}';
-    },
-    memory: (memoryMedia) {
-      return 'Memory media: ${memoryMedia.size}';
-    },
-    network: (networkMedia) {
-      return 'Network media: ${networkMedia.uri}';
-    },
-    asset: (assetMedia) {
-      return 'Asset media: ${assetMedia.assetPath}';
-    },
-    thumbnail: (thumbnailMedia) {
-      // Handle thumbnail media with preview optimization
-      final hasPreview = thumbnailMedia.hasThumbnail ? 'with preview' : 'no preview';
-      print('Thumbnail size: ${thumbnailMedia.thumbnail?.size ?? 0} bytes');
-      print('Original size: ${thumbnailMedia.original.size} bytes');
-      return 'Thumbnail media $hasPreview: ${thumbnailMedia.name}';
+    thumbnail: (t) {
+      final preview = t.hasThumbnail ? 'with preview' : 'no preview';
+      print('Thumbnail size: ${t.thumbnail?.size}');
+      print('Original size: ${t.original.size}');
+      return t.original.fold(
+        file: (f) => 'File ${f.name} ($preview)',
+        network: (n) => 'Network ${n.uri} ($preview)',
+        orElse: () => 'Other source ($preview)',
+      );
     },
     orElse: () => 'Unknown media type',
   );
-
   print(result);
+
+  // fold callbacks are synchronous: do async work on the source itself.
+  final backup = await video.saveTo('/backup/video.mp4');
+  final memoryMedia = await video.convertToMemory();
+  print('Processing ${memoryMedia.bytes.length} bytes from ${backup.name}');
 }
 ```
 
@@ -338,10 +334,10 @@ Future<void> processMedia() async {
 ```dart
 import 'package:media_source/media_source.dart';
 
-// Pattern matching on MediaType
-final mediaType = MediaType.fromPath('song.mp3', 'audio/mpeg');
+// Pattern matching on a media type (every source exposes it as `metadata`)
+final song = await AudioFileMedia.fromPath('/music/song.mp3');
 
-final description = mediaType.fold(
+final description = song.metadata.fold(
   audio: (audio) => 'Audio file with duration: ${audio.duration}',
   video: (video) => 'Video file with duration: ${video.duration}',
   image: (image) => 'Image file',
@@ -367,86 +363,75 @@ final info = media.fold(
 print(info); // File: /path/to/video.mp4
 ```
 
-### **Extension Methods** on **XFile**
-
-```dart
-import 'package:media_source/media_source.dart';
-import 'package:cross_file/cross_file.dart';
-
-final file = XFile('/path/to/document.pdf');
-
-// Get media type
-print(file.mediaType); // DocumentType
-
-// Get file name
-print(file.name); // document.pdf
-
-// Get size
-final size = await file.size();
-
-// Check existence
-if (await file.exists()) {
-  // Delete if exists
-  await file.delete();
-}
-```
-
 ## API Reference
 
-### **MediaType**
+### **Media types**
 
-Base class for **media type classification**:
+Media is classified by subtypes of `FileTypeImpl`, which extends `FileType` from
+[file_type_plus](https://pub.dev/packages/file_type_plus):
 
-- `MediaType.image` - Image files
-- `MediaType.audio` - Audio files
-- `MediaType.video` - Video files
-- `MediaType.document` - PDF documents
-- `MediaType.url` - URL references
-- `MediaType.other` - Other file types
-
-**Subtypes:**
 - `ImageType` - Image media
 - `AudioType` - Audio media with **optional duration**
 - `VideoType` - Video media with **optional duration**
-- `DocumentType` - Document media (PDF)
-- `UrlType` - URL references
+- `DocumentType` - Document media
+- `UrlType` - A URL that is not classified as media
 - `OtherType` - Unclassified media
 
+Every source exposes its type as `metadata` (for example, `VideoFileMedia.metadata` is a `VideoType`).
+
 **Methods:**
-- `MediaType.fromPath(String path, String? mimeType)` - Create from **file path**
-- `MediaType.fromBytes(Uint8List bytes, String? mimeType)` - Create from **byte data**
-- `when<T>({...})` - **Pattern matching** for type-specific operations
-- `isAny(List<MediaType> list)` - Check if type is in list
-- `isAnyType(List<Type> list)` - Check if runtime type is in list
+- `fold<T>({image, audio, video, document, url, required orElse})` - **Pattern matching** on a media type
+- `FileType.fromPath`, `FileType.fromBytes` and `isAny` come from file_type_plus; import it to use them
 
 ### **MediaSource Implementations**
 
-**FileMediaSource**
+All sources share `name`, `mimeType`, `size` (nullable), `metadata`, and `fold`.
+`MediaSource.isAnyType` is deprecated: it compares exact runtime types, so it never matches a
+base type such as `FileMediaSource`. Use `is` checks or `fold` instead.
+
+**FileMediaSource** - detects the type and returns the matching subclass
 ```dart
-FileMediaSource(XFile file)
+FileMediaSource.fromPath(String path, {String? name, FileSize? size, String? mimeType,
+    Duration? duration, FileType? mediaType})
+FileMediaSource.fromFile(XFile file, {...same options})
+
+// Or a specific type: VideoFileMedia, AudioFileMedia, ImageFileMedia,
+// DocumentFileMedia, OtherTypeFileMedia
+VideoFileMedia.fromPath(String path, {String? name, Duration? duration, String? mimeType, FileSize? size})
 ```
 
-**MemoryMediaSource**
+**MemoryMediaSource** - one constructor per type
 ```dart
-MemoryMediaSource(
-  Uint8List bytes, {
-  String? mimeType,
-  String? name,
-})
+VideoMemoryMedia(Uint8List bytes, {required String? name, Duration? duration, String? mimeType})
+ImageMemoryMedia(Uint8List bytes, {required String? name, String? mimeType})
+// Also AudioMemoryMedia, DocumentMemoryMedia, OtherTypeMemoryMedia
 ```
 
 **NetworkMediaSource**
 ```dart
-NetworkMediaSource(String url)
+NetworkMediaSource.fromUrl(String url, {String? name, FileSize? size, String? mimeType,
+    Duration? duration, FileType? mediaType})
+NetworkMediaSource.fromUrlOrNull(String? url, {...same options}) // null for null/empty/invalid URLs
+
+// Or a specific type, from a Uri or with .url(String)
+VideoNetworkMedia(Uri uri, {Duration? duration, String? mimeType, String? name, FileSize? size})
+ImageNetworkMedia.url(String url, {String? mimeType, String? name, FileSize? size})
+// Also AudioNetworkMedia, DocumentNetworkMedia, UnSupportedNetworkMedia
+
+// A plain URL: size is null, MIME type is detected from the path (null if unknown)
+UrlMedia(Uri uri)
+UrlMedia.url(String url)
 ```
 
-**AssetMediaSource**
+**AssetMediaSource** - one `load` per type; reads the asset to get its size unless `size` is given
 ```dart
-AssetMediaSource.load(
-  String assetPath, {
-  AssetBundle? bundle,
-  FileSize? size,
-})
+VideoAssetMedia.load(String assetPath, {AssetBundle? bundle, String? name, Duration? duration,
+    String? mimeType, FileSize? size})
+ImageAssetMedia.load(String assetPath, {AssetBundle? bundle, String? name, String? mimeType, FileSize? size})
+// Also AudioAssetMedia, DocumentAssetMedia, OtherTypeAssetMedia
+
+// ImageAssetMedia only: synchronous, no bundle read, size used as given
+ImageAssetMedia({required String assetPath, AssetBundle? bundle, String? name, FileSize? size, String? mimeType})
 ```
 
 **ThumbnailMediaSource**
@@ -680,7 +665,7 @@ final media = ThumbnailMediaSource<VideoType, ImageType>(
 // Pattern matching works seamlessly
 final result = media.fold(
   file: (f) => 'File source: ${f.file.path}',
-  memory: (m) => 'Memory source: ${m.size} bytes',
+  memory: (m) => 'Memory source: ${m.size}',
   network: (n) => 'Network source: ${n.uri}',
   asset: (a) => 'Asset source: ${a.assetPath}',
   thumbnail: (t) {
@@ -696,7 +681,7 @@ final result = media.fold(
 - 🎯 **Type-safe dual generics** - Separate types for original and thumbnail
 - 📊 **Automatic delegation** - Properties delegate to original media
 - 🔄 **Optional thumbnails** - Thumbnails can be null, check with `hasThumbnail`
-- 🧩 **Pattern matching** - Full support in `fold()` operations
+- 🧩 **Pattern matching** - Matches the `thumbnail` branch of `fold()`; fold `original` to handle the wrapped source
 - ⚡ **Performance optimization** - Load small thumbnails first, full media on demand
 - 🌐 **Works with all sources** - File, Memory, Network, and Asset media
 - 💾 **Bandwidth efficient** - Ideal for mobile and slow connections
@@ -717,8 +702,10 @@ final result = media.fold(
 You can **extend** the package to fit **custom domain needs**:
 
 - Create a **new media type** by extending `FileTypeImpl` (see `lib/src/media_type.dart`).
-- Create a **new media source** by extending `MediaSource<M extends FileType>` or by
-  implementing the **conversion mixins** (`ToFileConvertableMedia`, `ToMemoryConvertableMedia`).
+- Create a **new media source** by extending `MediaSource<M extends FileType>` and, if it
+  supports conversion, implementing `ToFileConvertableMedia` / `ToMemoryConvertableMedia`.
+  The built-in base classes (`FileMediaSource`, `MemoryMediaSource`, ...) have private
+  constructors and can't be extended outside the package.
 - Create a **custom media factory** to centralize media creation logic and apply business rules.
 
 ### Custom Type and Source Example
@@ -728,6 +715,7 @@ Example — **custom type** and **source**:
 ```dart
 import 'dart:typed_data';
 import 'package:cross_file/cross_file.dart';
+import 'package:file_type_plus/file_type_plus.dart';
 import 'package:media_source/media_source.dart';
 
 class StickerType extends FileTypeImpl {
@@ -736,18 +724,24 @@ class StickerType extends FileTypeImpl {
   List<Object?> get props => const [];
 }
 
-class StickerMemoryMedia extends MemoryMediaSource<StickerType> {
-  StickerMemoryMedia(Uint8List bytes, {required String name})
-      : super._(bytes, name: name, metadata: StickerType());
+class StickerMemoryMedia extends MediaSource<StickerType>
+    implements ToFileConvertableMedia<StickerType> {
+  StickerMemoryMedia(this.bytes, {required String name})
+      : super(metadata: StickerType(), name: name, mimeType: 'image/webp', size: bytes.length.b);
+
+  final Uint8List bytes;
 
   @override
   Future<FileMediaSource<StickerType>> saveTo(String path) async {
     final file = XFile.fromData(bytes, name: name, path: path);
-    await PlatformUtils.instance.createDirectoryIfNotExists(path);
+    await PlatformUtils.instance.ensureParentDirectoryExists(path);
     await file.saveTo(path);
     // Return your own FileMediaSource<StickerType> implementation here
     throw UnimplementedError();
   }
+
+  @override
+  List<Object?> get props => [...super.props, bytes];
 }
 ```
 
@@ -757,8 +751,8 @@ You can create **custom factories** to centralize media instantiation logic and 
 
 ```dart
 import 'dart:typed_data';
+import 'package:file_type_plus/file_type_plus.dart';
 import 'package:media_source/media_source.dart';
-import 'package:file_sized/file_sized.dart';
 
 /// Enum to specify media source type
 enum MediaSourceType { file, memory, network }
@@ -779,8 +773,8 @@ class MediaFactory {
     switch (source) {
       case MediaSourceType.file:
         if (path != null) {
-          final fileType = await FileType.fromPath(path);
-          if (fileType is VideoType) {
+          final fileType = FileType.fromPath(path);
+          if (fileType.isAny([FileType.video])) {
             return VideoFileMedia.fromPath(path, name: name, duration: duration);
           }
           // Handle other types...
@@ -789,7 +783,7 @@ class MediaFactory {
       case MediaSourceType.memory:
         if (bytes != null) {
           final fileType = FileType.fromBytes(bytes, mimeType);
-          if (fileType is ImageType) {
+          if (fileType.isAny([FileType.image])) {
             return ImageMemoryMedia(bytes, name: name ?? 'image.jpg');
           }
           // Handle other types...
@@ -852,6 +846,21 @@ class SmartMediaFactory {
 - ✅ Windows
 - ✅ Linux
 
+### Web notes
+
+Browsers have no writable file system, so on web:
+
+- `saveTo` / `saveToFolder` trigger a browser download. The path only names the
+  download; it is not readable afterwards. The returned `FileMediaSource` reads from
+  the original data instead: a new blob URL for memory and asset sources, or the same
+  `XFile` for file sources.
+- `moveTo` / `moveToFolder` download the file and keep the original in place, because
+  the returned source still reads from it.
+- `delete` revokes blob URLs; other paths cannot be deleted and return `false`. A file
+  source and the source returned by its `saveTo` / `moveTo` share one blob URL, so
+  deleting either one makes both unreadable.
+- Directory operations are no-ops.
+
 ## Additional information
 
 ### Contributing
@@ -860,7 +869,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### Issues
 
-If you encounter any issues or have suggestions, please file them in the [issue tracker](https://github.com/balsm-io/media_source/issues).
+If you encounter any issues or have suggestions, please file them in the [issue tracker](https://github.com/balsm-health/media_source/issues).
 
 ### License
 

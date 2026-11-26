@@ -1,3 +1,7 @@
+@TestOn('vm')
+// Reads fixtures from disk via XFile paths, which a browser can't address.
+library;
+
 import 'package:flutter/services.dart';
 import 'package:media_source/src/sources/file_media_source.dart';
 import 'package:media_source/src/sources/memory_media_source.dart';
@@ -7,7 +11,9 @@ import 'package:file_sized/file_sized.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'shared/fixture.dart';
 
-final tempDir = 'test/assets/saved_to';
+// Unique per test file: test files run in parallel, and tearDownAll deletes
+// this directory — sharing it with another file's tests causes flaky races.
+final tempDir = 'test/assets/memory_media_saved_to';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -18,12 +24,7 @@ void main() {
       final bytes = await asset.file.readAsBytes();
       final duration = asset.duration!;
 
-      final video = VideoMemoryMedia(
-        bytes,
-        name: asset.file.name,
-        duration: duration,
-        mimeType: asset.mimeType,
-      );
+      final video = VideoMemoryMedia(bytes, name: asset.file.name, duration: duration, mimeType: asset.mimeType);
 
       expect(video.bytes, bytes);
       expect(video.name, asset.file.name);
@@ -62,12 +63,7 @@ void main() {
 
       final duration = const Duration(minutes: 3);
 
-      final audio = AudioMemoryMedia(
-        bytes,
-        name: 'audio.mp3',
-        duration: duration,
-        mimeType: asset.mimeType,
-      );
+      final audio = AudioMemoryMedia(bytes, name: 'audio.mp3', duration: duration, mimeType: asset.mimeType);
 
       expect(audio.bytes, bytes);
       expect(audio.name, 'audio.mp3');
@@ -95,11 +91,7 @@ void main() {
       final asset = Fixture.sample_image;
       final bytes = await asset.file.readAsBytes();
 
-      final image = ImageMemoryMedia(
-        bytes,
-        name: 'image.png',
-        mimeType: 'image/png',
-      );
+      final image = ImageMemoryMedia(bytes, name: 'image.png', mimeType: 'image/png');
 
       expect(image.bytes, bytes);
       expect(image.name, 'image.png');
@@ -124,11 +116,7 @@ void main() {
     test('should create with all properties', () async {
       final asset = Fixture.sample_doc;
       final bytes = await asset.file.readAsBytes();
-      final doc = DocumentMemoryMedia(
-        bytes,
-        name: 'document.pdf',
-        mimeType: 'application/pdf',
-      );
+      final doc = DocumentMemoryMedia(bytes, name: 'document.pdf', mimeType: 'application/pdf');
 
       expect(doc.bytes, bytes);
       expect(doc.name, 'document.pdf');
@@ -154,11 +142,7 @@ void main() {
       final asset = Fixture.sample_unknown_file;
       final bytes = await asset.file.readAsBytes();
 
-      final unsupported = OtherTypeMemoryMedia(
-        bytes,
-        name: 'file.unknown',
-        mimeType: asset.mimeType,
-      );
+      final unsupported = OtherTypeMemoryMedia(bytes, name: 'file.unknown', mimeType: asset.mimeType);
 
       expect(unsupported.bytes, bytes);
       expect(unsupported.name, 'file.unknown');
@@ -178,21 +162,17 @@ void main() {
       expect(unsupported1, isNot(unsupported3));
     });
 
-    test(
-      'should be equatable with mimeType',
-      () async {
-        final asset = Fixture.sample_unknown_file;
-        final bytes = await asset.file.readAsBytes();
+    test('should be equatable with mimeType', () async {
+      final asset = Fixture.sample_unknown_file;
+      final bytes = await asset.file.readAsBytes();
 
-        final unsupported1 = OtherTypeMemoryMedia(bytes, name: 'file.unknown');
-        final unsupported2 = OtherTypeMemoryMedia(bytes, name: 'file.unknown', mimeType: asset.mimeType);
-        final unsupported3 = OtherTypeMemoryMedia(bytes, name: 'other.unknown');
+      final unsupported1 = OtherTypeMemoryMedia(bytes, name: 'file.unknown');
+      final unsupported2 = OtherTypeMemoryMedia(bytes, name: 'file.unknown', mimeType: asset.mimeType);
+      final unsupported3 = OtherTypeMemoryMedia(bytes, name: 'other.unknown');
 
-        expect(unsupported1, unsupported2);
-        expect(unsupported1, isNot(unsupported3));
-      },
-      skip: "mimeType is not retrieved for this unsupported file",
-    );
+      expect(unsupported1, unsupported2);
+      expect(unsupported1, isNot(unsupported3));
+    }, skip: "mimeType is not retrieved for this unsupported file");
   });
 
   group('properties', () {
@@ -229,12 +209,7 @@ void main() {
       final bytes = await asset.file.readAsBytes();
       final duration = asset.duration!;
 
-      final video = VideoMemoryMedia(
-        bytes,
-        name: asset.file.name,
-        duration: duration,
-        mimeType: asset.mimeType,
-      );
+      final video = VideoMemoryMedia(bytes, name: asset.file.name, duration: duration, mimeType: asset.mimeType);
 
       final filePath = '$tempDir/saved_video.mp4';
 
@@ -254,12 +229,7 @@ void main() {
       final bytes = await asset.file.readAsBytes();
       final duration = asset.duration!;
 
-      final audio = AudioMemoryMedia(
-        bytes,
-        name: asset.file.name,
-        duration: duration,
-        mimeType: asset.mimeType,
-      );
+      final audio = AudioMemoryMedia(bytes, name: asset.file.name, duration: duration, mimeType: asset.mimeType);
 
       final filePath = '$tempDir/saved_audio.mp3';
 
@@ -278,11 +248,7 @@ void main() {
       final asset = Fixture.sample_image;
       final bytes = await asset.file.readAsBytes();
 
-      final image = ImageMemoryMedia(
-        bytes,
-        name: asset.file.name,
-        mimeType: asset.mimeType,
-      );
+      final image = ImageMemoryMedia(bytes, name: asset.file.name, mimeType: asset.mimeType);
 
       final filePath = '$tempDir/saved_image.jpg';
 
@@ -300,11 +266,7 @@ void main() {
       final asset = Fixture.sample_doc;
       final bytes = await asset.file.readAsBytes();
 
-      final doc = DocumentMemoryMedia(
-        bytes,
-        name: asset.file.name,
-        mimeType: asset.mimeType,
-      );
+      final doc = DocumentMemoryMedia(bytes, name: asset.file.name, mimeType: asset.mimeType);
 
       final filePath = '$tempDir/saved_document.pdf';
 
@@ -322,11 +284,7 @@ void main() {
       final asset = Fixture.sample_unknown_file;
       final bytes = await asset.file.readAsBytes();
 
-      final other = OtherTypeMemoryMedia(
-        bytes,
-        name: asset.file.name,
-        mimeType: asset.mimeType,
-      );
+      final other = OtherTypeMemoryMedia(bytes, name: asset.file.name, mimeType: asset.mimeType);
 
       final filePath = '$tempDir/saved_file.sh';
 
@@ -344,11 +302,7 @@ void main() {
       final asset = Fixture.sample_image;
       final bytes = await asset.file.readAsBytes();
 
-      final image = ImageMemoryMedia(
-        bytes,
-        name: asset.file.name,
-        mimeType: asset.mimeType,
-      );
+      final image = ImageMemoryMedia(bytes, name: asset.file.name, mimeType: asset.mimeType);
 
       final filePath = '$tempDir/nested/folder/saved_image.jpg';
 
@@ -370,12 +324,7 @@ void main() {
       final bytes = await asset.file.readAsBytes();
       final duration = asset.duration!;
 
-      final video = VideoMemoryMedia(
-        bytes,
-        name: asset.file.name,
-        duration: duration,
-        mimeType: asset.mimeType,
-      );
+      final video = VideoMemoryMedia(bytes, name: asset.file.name, duration: duration, mimeType: asset.mimeType);
 
       final savedFile = await video.saveToFolder(tempDir);
 
@@ -393,12 +342,7 @@ void main() {
       final bytes = await asset.file.readAsBytes();
       final duration = asset.duration!;
 
-      final audio = AudioMemoryMedia(
-        bytes,
-        name: asset.file.name,
-        duration: duration,
-        mimeType: asset.mimeType,
-      );
+      final audio = AudioMemoryMedia(bytes, name: asset.file.name, duration: duration, mimeType: asset.mimeType);
 
       final savedFile = await audio.saveToFolder(tempDir);
 
@@ -415,11 +359,7 @@ void main() {
       final asset = Fixture.sample_image;
       final bytes = await asset.file.readAsBytes();
 
-      final image = ImageMemoryMedia(
-        bytes,
-        name: asset.file.name,
-        mimeType: asset.mimeType,
-      );
+      final image = ImageMemoryMedia(bytes, name: asset.file.name, mimeType: asset.mimeType);
 
       final savedFile = await image.saveToFolder(tempDir);
 
@@ -435,11 +375,7 @@ void main() {
       final asset = Fixture.sample_doc;
       final bytes = await asset.file.readAsBytes();
 
-      final doc = DocumentMemoryMedia(
-        bytes,
-        name: asset.file.name,
-        mimeType: asset.mimeType,
-      );
+      final doc = DocumentMemoryMedia(bytes, name: asset.file.name, mimeType: asset.mimeType);
 
       final savedFile = await doc.saveToFolder(tempDir);
 
@@ -455,11 +391,7 @@ void main() {
       final asset = Fixture.sample_unknown_file;
       final bytes = await asset.file.readAsBytes();
 
-      final other = OtherTypeMemoryMedia(
-        bytes,
-        name: asset.file.name,
-        mimeType: asset.mimeType,
-      );
+      final other = OtherTypeMemoryMedia(bytes, name: asset.file.name, mimeType: asset.mimeType);
 
       final savedFile = await other.saveToFolder(tempDir);
 
@@ -476,17 +408,9 @@ void main() {
       final bytes1 = await asset.file.readAsBytes();
       final bytes2 = Uint8List.fromList([...bytes1, 1, 2, 3]); // Different bytes
 
-      final image1 = ImageMemoryMedia(
-        bytes1,
-        name: asset.file.name,
-        mimeType: asset.mimeType,
-      );
+      final image1 = ImageMemoryMedia(bytes1, name: asset.file.name, mimeType: asset.mimeType);
 
-      final image2 = ImageMemoryMedia(
-        bytes2,
-        name: asset.file.name,
-        mimeType: asset.mimeType,
-      );
+      final image2 = ImageMemoryMedia(bytes2, name: asset.file.name, mimeType: asset.mimeType);
 
       await image1.saveToFolder(tempDir);
       final savedFile2 = await image2.saveToFolder(tempDir);

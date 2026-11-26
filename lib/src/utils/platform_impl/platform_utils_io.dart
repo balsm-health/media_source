@@ -8,7 +8,7 @@ import 'package:media_source/src/utils/platform_utils.dart';
 /// Provides concrete file system operations for native platforms (mobile,
 /// desktop). All methods are written to be resilient: they catch exceptions
 /// and return boolean success indicators where appropriate.
-class PlatformUtilsFacadeImpl implements PlatformUtilsFacade {
+class PlatformUtilsFacadeImpl extends PlatformUtilsFacade {
   /// Deletes the provided [XFile] from disk.
   ///
   /// Returns `true` when deletion is successful, `false` otherwise.
@@ -25,12 +25,33 @@ class PlatformUtilsFacadeImpl implements PlatformUtilsFacade {
     }
   }
 
-  /// Ensures the parent directory of [directoryPath] exists; creates it if missing.
+  /// Ensures the parent directory of [filePath] exists; creates it if missing.
   @override
-  Future<void> createDirectoryIfNotExists(String directoryPath) async {
-    final directory = Directory(directoryPath).parent;
+  Future<void> ensureParentDirectoryExists(String filePath) async {
+    final directory = Directory(filePath).parent;
     if (!await directory.exists()) {
       await directory.create(recursive: true);
+    }
+  }
+
+  /// Moves the file with [File.rename], creating the destination's parent
+  /// directory first. Returns `false` when renaming fails (e.g. cross-device
+  /// moves) so callers can copy + delete instead.
+  ///
+  /// Symbolic links also return `false`: rename would move the link itself,
+  /// and a relative link would then point somewhere else, while copy reads
+  /// the target's content.
+  @override
+  Future<bool> moveFile(String sourcePath, String destinationPath) async {
+    try {
+      final source = File(sourcePath);
+      if (sourcePath.isEmpty || !await source.exists()) return false;
+      if (await FileSystemEntity.isLink(sourcePath)) return false;
+      await ensureParentDirectoryExists(destinationPath);
+      await source.rename(destinationPath);
+      return true;
+    } catch (e) {
+      return false;
     }
   }
 
@@ -67,7 +88,7 @@ class PlatformUtilsFacadeImpl implements PlatformUtilsFacade {
     try {
       final path = file.path;
       if (path.isEmpty) return false; // If path is empty, the file cannot exist
-      return File(path).exists();
+      return await File(path).exists();
     } catch (e) {
       return false;
     }

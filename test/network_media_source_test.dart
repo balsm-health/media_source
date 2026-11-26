@@ -113,13 +113,23 @@ void main() {
 
         expect(source.mimeType, 'video/mp4');
       });
+
+      test('should detect media type from path, ignoring query string', () {
+        final source = NetworkMediaSource.fromUrl('https://example.com/video.mp4?token=abc.xyz');
+
+        expect(source, isA<VideoNetworkMedia>());
+      });
+
+      test('should percent-decode file name from URL path', () {
+        final source = NetworkMediaSource.fromUrl('https://example.com/my%20video.mp4');
+
+        expect(source.name, 'my video.mp4');
+      });
     });
 
     group('fromUrlOrNull', () {
       test('should return NetworkMediaSource for valid URL', () {
-        final source = NetworkMediaSource.fromUrlOrNull(
-          'https://example.com/video.mp4',
-        );
+        final source = NetworkMediaSource.fromUrlOrNull('https://example.com/video.mp4');
 
         expect(source, isNotNull);
         expect(source, isA<NetworkMediaSource>());
@@ -138,6 +148,26 @@ void main() {
       test('should handle invalid URL gracefully', () {
         // This depends on implementation - might throw or return null
         expect(() => NetworkMediaSource.fromUrlOrNull('not a valid url'), returnsNormally);
+      });
+
+      test('should return null for unparseable URL', () {
+        // Unterminated IPv6 host makes Uri.parse throw FormatException.
+        expect(NetworkMediaSource.fromUrlOrNull('http://[invalid'), isNull);
+      });
+
+      test('should forward optional parameters', () {
+        final size = 1024.b;
+        final source = NetworkMediaSource.fromUrlOrNull(
+          'https://example.com/video.mp4',
+          name: 'custom.mp4',
+          size: size,
+          duration: const Duration(seconds: 5),
+        );
+
+        expect(source, isA<VideoNetworkMedia>());
+        expect(source!.name, 'custom.mp4');
+        expect(source.size, size);
+        expect((source.metadata as VideoType).duration, const Duration(seconds: 5));
       });
     });
 
@@ -357,24 +387,22 @@ void main() {
 
     group('UrlMedia', () {
       test('should create with Uri constructor', () {
-        final urlMedia = UrlMedia(
-          Uri.parse('https://example.com/file.dat'),
-        );
+        final urlMedia = UrlMedia(Uri.parse('https://example.com/file.dat'));
 
         expect(urlMedia.uri.toString(), 'https://example.com/file.dat');
-        expect(urlMedia.size, 0.b);
-        expect(urlMedia.mimeType, 'url');
+        expect(urlMedia.size, isNull);
+        // '.dat' has no known MIME type, so detection from the path yields null.
+        expect(urlMedia.mimeType, isNull);
         expect(urlMedia.metadata, isA<UrlType>());
       });
 
       test('should create from url string using .url constructor', () {
-        final urlMedia = UrlMedia.url(
-          'https://example.com/data.bin',
-        );
+        final urlMedia = UrlMedia.url('https://example.com/data.bin');
 
         expect(urlMedia.uri.toString(), 'https://example.com/data.bin');
-        expect(urlMedia.size, 0.b);
-        expect(urlMedia.mimeType, 'url');
+        expect(urlMedia.size, isNull);
+        // MIME type auto-detected from the URL path ('.bin').
+        expect(urlMedia.mimeType, 'application/octet-stream');
         expect(urlMedia.metadata, isA<UrlType>());
       });
 
@@ -398,9 +426,7 @@ void main() {
 
     group('properties', () {
       test('should parse URI correctly', () {
-        final source = NetworkMediaSource.fromUrl(
-          'https://example.com:8080/path/to/video.mp4?param=value',
-        );
+        final source = NetworkMediaSource.fromUrl('https://example.com:8080/path/to/video.mp4?param=value');
 
         expect(source.uri.scheme, 'https');
         expect(source.uri.host, 'example.com');
@@ -409,9 +435,7 @@ void main() {
       });
 
       test('should extract extension from name', () {
-        final source = NetworkMediaSource.fromUrl(
-          'https://example.com/video.mp4',
-        );
+        final source = NetworkMediaSource.fromUrl('https://example.com/video.mp4');
 
         expect(source.extension, '.mp4');
       });

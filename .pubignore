@@ -1,2 +1,39 @@
-# Files to ignore when publishing to pub.dev
+# Files to ignore when publishing to pub.dev.
+# NOTE: when this file exists, pub ignores .gitignore in this directory,
+# so build/tool output must be listed here too.
 pubspec.lock
+build/
+coverage/
+.dart_tool/
+.claude/
+.github/
+.DS_Store
+*.iml
+.idea/
+.vscode/
+.fvm/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.log
+# Never publish local secrets.
+.env
+.env.*
+# Generated docs, web build output and editor/OS leftovers.
+doc/api/
+*.dart.js
+*.info.json
+*.js
+*.js_
+*.js.deps
+*.js.map
+*.swp
+*.tmp
+*~
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+flutter_*.png
+.analysis_options_individual
+*.ipr
+*.iws

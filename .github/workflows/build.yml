@@ -7,46 +7,86 @@ name: Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "release/**" ]
   pull_request:
     branches: [ "main" ]
 
+# Least privilege: the build only needs to read the repository.
+permissions:
+  contents: read
+
+# Cancel an in-progress run when a newer commit lands on the same PR/branch.
+# Runs on main are never cancelled, so every merged commit gets a result.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   build:
+    name: build (Flutter ${{ matrix.flutter-version || 'stable' }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Lowest supported version (pubspec: flutter >=3.29.0).
+          - flutter-version: 3.29.0
+          # Latest stable; the only leg that uploads coverage.
+          - flutter-version: ''
+            coverage: true
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.24.0
+          flutter-version: ${{ matrix.flutter-version }}
 
       - name: Install dependencies
         run: flutter pub get
 
-      # Uncomment this step to verify the use of 'dart format' on each commit.
-      # - name: Verify formatting
-      #   run: dart format --output=none --set-exit-if-changed .
+      # Formatter output differs between Dart versions, so check on stable only.
+      - name: Verify formatting
+        if: ${{ matrix.coverage }}
+        run: dart format --output=none --set-exit-if-changed .
 
       # Consider passing '--fatal-infos' for slightly stricter analysis.
       - name: Analyze project source
         run: dart analyze
 
+      # Fails on any pub.dev validation warning before a release is cut.
+      - name: Validate package for publishing
+        if: ${{ matrix.coverage }}
+        run: dart pub publish --dry-run
+
       # Your project will need to have tests in test/ and a dependency on
       # package:test for this step to succeed. Note that Flutter projects will
       # want to change this to 'flutter test'.
+      # Step timeouts make a hang fail fast and point at the step; the
+      # expanded reporter logs each test as it starts, so the last line names
+      # the culprit. (package:test already times out each test after 30s.)
       - name: Run tests
-        run: flutter test --coverage
+        timeout-minutes: 10
+        run: flutter test --coverage --reporter expanded
+
+      # Disk-fixture suites are tagged @TestOn('vm'); this covers the web
+      # branches (blob-backed saveTo/moveTo) that VM coverage can't reach.
+      - name: Run web tests
+        if: ${{ matrix.coverage }}
+        timeout-minutes: 10
+        run: flutter test --platform chrome --reporter expanded
 
       - name: Codecov
+        if: ${{ matrix.coverage }}
         # You may pin to the exact commit or the version.
-        uses: codecov/codecov-action@v5.5.1
+        uses: codecov/codecov-action@v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: true
+          # A Codecov outage or upload failure should not block merges.
+          fail_ci_if_error: false
           verbose: true
         
