@@ -5,24 +5,28 @@ name: Publish to pub.dev
 # Release: bump pubspec version, merge, then push a matching tag, e.g.
 #   git tag v2.0.0 && git push origin v2.0.0
 #
-# Safeguards: the tagged commit must be on main, the job waits for approval
-# in the `pub.dev` environment (configure required reviewers in repo
-# settings and tick "Require GitHub Actions environment" on pub.dev), and
-# actions are pinned to commit SHAs because this job can mint publish
-# credentials.
+# Safeguards:
+# - `verify` runs the checks, dependency resolution and tests. It has no
+#   `id-token` permission, so no dependency or test code can mint a pub.dev
+#   token.
+# - `publish` only checks out, sets up the SDK and publishes. It is the only
+#   job with `id-token: write`, and it waits for approval in the `pub.dev`
+#   environment (configure required reviewers in repo settings and tick
+#   "Require GitHub Actions environment" on pub.dev).
+# - Actions are pinned to commit SHAs because this workflow can mint publish
+#   credentials.
 on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
 
+permissions:
+  contents: read
+
 jobs:
-  publish:
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment: pub.dev
-    permissions:
-      contents: read
-      id-token: write # Required to authenticate with pub.dev via OIDC.
 
     steps:
       - name: Checkout repository
@@ -60,11 +64,32 @@ jobs:
         timeout-minutes: 10
         run: flutter test
 
-      # Mints the short-lived GitHub OIDC token for pub.dev here, right before
-      # publishing, so the slow steps above can't outlive it. flutter pub
-      # reads the credentials this writes to the shared pub config.
+      - name: Validate package
+        run: dart pub publish --dry-run
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: pub.dev
+    permissions:
+      contents: read
+      id-token: write # Required to authenticate with pub.dev via OIDC.
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+
+      # Writes the pub.dev OIDC credentials to the shared pub config, which
+      # flutter pub reads.
       - name: Configure pub.dev credentials
         uses: dart-lang/setup-dart@2286a0c042b44434fe26d292bbce8d34f7ec662b # v1.8.2
 
+      # Resolves dependencies but runs no package code.
       - name: Publish
         run: flutter pub publish --force
